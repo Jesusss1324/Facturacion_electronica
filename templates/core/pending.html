@@ -1,0 +1,12 @@
+{% extends layout_template %}
+{% block before_content %}
+  {% if screen.step %}{% include 'includes/invoice_steps.html' %}{% endif %}
+{% endblock %}
+{% block content %}
+<section class="card empty-state" aria-labelledby="pending-title">
+  <span class="empty-state-icon">{% include 'includes/icon.html' with name='clock' %}</span>
+  {% if layout_template == 'layouts/public.html' %}<h1>{{ screen.title }}</h1>{% endif %}
+  <h2 id="pending-title">Sección en preparación</h2>
+  <p class="text-muted">Esta sección todavía no está disponible.</p>
+</section>
+{% endblock %}

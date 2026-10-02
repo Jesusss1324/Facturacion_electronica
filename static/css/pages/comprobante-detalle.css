@@ -1,0 +1,677 @@
+@layer components {
+  .detalle-wrapper {
+    max-width: 980px;
+    margin: 0 auto;
+    padding: var(--space-3) 0 var(--space-6) 0;
+  }
+
+  /* BARRA SUPERIOR DE ACCIONES */
+  .detalle-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+    margin-bottom: var(--space-4);
+  }
+
+  .topbar-left {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+  }
+
+  .badge-facsimil {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 10px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: #475569;
+    background-color: #f1f5f9;
+    border: 1px solid #e2e8f0;
+    border-radius: 999px;
+    letter-spacing: 0.04em;
+  }
+
+  .topbar-right {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+  }
+
+  .btn-download-pdf {
+    background-color: #0f172a;
+    border-color: #0f172a;
+    color: #ffffff;
+  }
+
+  .btn-download-pdf:hover {
+    background-color: #1e293b;
+    border-color: #1e293b;
+    color: #ffffff;
+  }
+
+  /* PLIEGO / HOJA DE FACTURA */
+  .invoice-sheet {
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    box-shadow: 0 4px 16px -2px rgba(15, 23, 42, 0.08);
+    position: relative;
+    padding: 0 0 var(--space-5) 0;
+    overflow: hidden;
+  }
+
+  .sheet-accent-bar {
+    height: 4px;
+    width: 100%;
+    background: linear-gradient(90deg, #1e3a8a 0%, #1e3a8a 50%, #dc2626 50%, #dc2626 100%);
+  }
+
+  /* CABECERA DE LA FACTURA */
+  .sheet-header {
+    display: grid;
+    grid-template-columns: 1.25fr 1fr;
+    gap: var(--space-4);
+    padding: var(--space-5) var(--space-5) var(--space-4) var(--space-5);
+  }
+
+  .emisor-column {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .emisor-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #475569;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 2px;
+  }
+
+  .emisor-name {
+    font-size: 1.2rem;
+    font-weight: 800;
+    color: #0f172a;
+    margin: 0;
+    line-height: 1.25;
+  }
+
+  .emisor-rnc {
+    font-size: 0.85rem;
+    color: #1e293b;
+    margin: 2px 0 4px 0;
+  }
+
+  .emisor-address,
+  .emisor-contact {
+    font-size: 0.78rem;
+    color: #475569;
+    margin: 0;
+    line-height: 1.35;
+  }
+
+  .emisor-subbar {
+    margin-top: 8px;
+    padding-top: 6px;
+    border-top: 1px solid #f1f5f9;
+    font-size: 0.7rem;
+    color: #64748b;
+  }
+
+  /* CAJA FISCAL DGII */
+  .dgii-box {
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    background: #f8fafc;
+    padding: var(--space-3) var(--space-4);
+    display: flex;
+    flex-direction: column;
+  }
+
+  .dgii-box-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 4px;
+  }
+
+  .dgii-brand {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.75rem;
+    color: #0f172a;
+    letter-spacing: 0.02em;
+  }
+
+  .badge-status {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.03em;
+  }
+
+  .badge-status-aprobado {
+    background-color: #dcfce7;
+    color: #15803d;
+    border: 1px solid #bbf7d0;
+  }
+
+  .badge-status-rechazado {
+    background-color: #fee2e2;
+    color: #b91c1c;
+    border: 1px solid #fecaca;
+  }
+
+  .badge-status-anulado {
+    background-color: #fef3c7;
+    color: #b45309;
+    border: 1px solid #fde68a;
+  }
+
+  .dgii-sub {
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: #64748b;
+    margin: 2px 0;
+    text-transform: uppercase;
+  }
+
+  .dgii-tipo-ecf {
+    font-size: 0.85rem;
+    font-weight: 800;
+    color: #0f172a;
+    margin: 0 0 8px 0;
+  }
+
+  .encf-container {
+    background: #ffffff;
+    border: 1px solid #94a3b8;
+    border-radius: 6px;
+    padding: 6px 10px;
+    margin-bottom: 8px;
+  }
+
+  .encf-label {
+    display: block;
+    font-size: 0.62rem;
+    font-weight: 700;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .encf-value-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .encf-value {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: #0f172a;
+    letter-spacing: 0.05em;
+  }
+
+  .btn-copy-encf {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    color: #64748b;
+    padding: 4px;
+    border-radius: 4px;
+    transition: all 0.15s ease;
+  }
+
+  .btn-copy-encf:hover {
+    color: #0f172a;
+    background-color: #f1f5f9;
+  }
+
+  .dgii-meta-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    row-gap: 4px;
+    font-size: 0.72rem;
+    color: #475569;
+  }
+
+  .dgii-meta-grid .full-width {
+    grid-column: span 2;
+    padding-top: 4px;
+    border-top: 1px dashed #cbd5e1;
+    margin-top: 2px;
+  }
+
+  .meta-lbl {
+    color: #64748b;
+  }
+
+  .meta-val {
+    color: #0f172a;
+    font-weight: 600;
+  }
+
+  /* ALERTAS DE ESTADO FISCAL (RECHAZO / ANULADO) */
+  .sheet-alert {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-3);
+    margin: 0 var(--space-5) var(--space-4) var(--space-5);
+    padding: var(--space-3) var(--space-4);
+    border-radius: 6px;
+    font-size: 0.82rem;
+  }
+
+  .alert-rechazo {
+    background-color: #fef2f2;
+    border: 1px solid #fecaca;
+    color: #991b1b;
+  }
+
+  .alert-rechazo .alert-title {
+    color: #991b1b;
+  }
+
+  .alert-anulado {
+    background-color: #fffbeb;
+    border: 1px solid #fde68a;
+    color: #92400e;
+  }
+
+  .alert-anulado .alert-title {
+    color: #92400e;
+  }
+
+  .alert-title {
+    display: block;
+    font-weight: 800;
+    margin-bottom: 2px;
+  }
+
+  .alert-desc {
+    margin: 0;
+    font-size: 0.8rem;
+    line-height: 1.35;
+  }
+
+  /* SECCIÓN RECEPTOR */
+  .receptor-section {
+    margin: 0 var(--space-5) var(--space-4) var(--space-5);
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    overflow: hidden;
+  }
+
+  .receptor-header {
+    background-color: #f8fafc;
+    border-bottom: 1px solid #e2e8f0;
+    padding: 6px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #475569;
+    letter-spacing: 0.03em;
+  }
+
+  .receptor-client-id {
+    color: #64748b;
+  }
+
+  .receptor-body {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr;
+    gap: var(--space-4);
+    padding: var(--space-3) var(--space-4);
+    font-size: 0.8rem;
+  }
+
+  .field-label {
+    display: block;
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: #64748b;
+    margin-bottom: 2px;
+  }
+
+  .receptor-name {
+    display: block;
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: #0f172a;
+    margin-bottom: 3px;
+  }
+
+  .receptor-address {
+    font-size: 0.78rem;
+    color: #475569;
+    margin: 0;
+  }
+
+  .receptor-col-right {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .receptor-detail-line {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.78rem;
+  }
+
+  .detail-label {
+    color: #64748b;
+    font-size: 0.72rem;
+    font-weight: 600;
+  }
+
+  .detail-value {
+    color: #0f172a;
+  }
+
+  /* TABLA DE ÍTEMS */
+  .table-responsive {
+    margin: 0 var(--space-5) var(--space-4) var(--space-5);
+    overflow-x: auto;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+  }
+
+  .items-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.78rem;
+  }
+
+  .items-table thead {
+    background-color: #1e293b;
+    color: #ffffff;
+  }
+
+  .items-table th {
+    padding: 8px 10px;
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    border: none;
+    white-space: nowrap;
+  }
+
+  .th-num { text-align: center; width: 40px; }
+  .th-desc { text-align: left; }
+  .th-unidad { text-align: center; width: 75px; }
+  .th-cant { text-align: right; width: 60px; }
+  .th-precio { text-align: right; width: 95px; }
+  .th-descto { text-align: right; width: 85px; }
+  .th-itbis-pct { text-align: center; width: 65px; }
+  .th-itbis-liq { text-align: right; width: 95px; }
+  .th-total { text-align: right; width: 105px; }
+
+  .items-table tbody tr {
+    border-bottom: 1px solid #e2e8f0;
+  }
+
+  .items-table tbody tr:last-child {
+    border-bottom: none;
+  }
+
+  .items-table tbody tr:nth-child(even) {
+    background-color: #f8fafc;
+  }
+
+  .items-table td {
+    padding: 8px 10px;
+    vertical-align: top;
+  }
+
+  .td-num { text-align: center; color: #64748b; font-weight: 600; }
+  .td-desc { text-align: left; }
+  .item-title { display: block; color: #0f172a; font-weight: 700; line-height: 1.25; }
+  .item-subdesc { display: block; font-size: 0.72rem; line-height: 1.3; margin-top: 2px; }
+  .td-unidad { text-align: center; }
+  .unit-type { display: block; font-size: 0.68rem; }
+  .td-cant { text-align: right; }
+  .td-precio { text-align: right; }
+  .td-descto { text-align: right; }
+  .td-itbis-pct { text-align: center; }
+  .td-itbis-liq { text-align: right; }
+  .td-total { text-align: right; font-weight: 700; color: #0f172a; }
+
+  /* PIE DE FACTURA: CANTIDAD EN LETRAS + QR vs LIQUIDACIÓN */
+  .sheet-footer {
+    display: grid;
+    grid-template-columns: 1.15fr 1fr;
+    gap: var(--space-4);
+    padding: 0 var(--space-5);
+  }
+
+  .footer-left-col {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+  }
+
+  .letras-card {
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    padding: 8px 12px;
+    background-color: #ffffff;
+  }
+
+  .letras-label {
+    display: block;
+    font-size: 0.64rem;
+    font-weight: 700;
+    color: #64748b;
+    letter-spacing: 0.04em;
+    margin-bottom: 2px;
+  }
+
+  .letras-text {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #1e293b;
+    margin: 0;
+    line-height: 1.35;
+  }
+
+  .qr-verification-card {
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    padding: 10px 12px;
+    background-color: #ffffff;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .qr-code-graphic {
+    flex-shrink: 0;
+    border: 1px solid #e2e8f0;
+    padding: 4px;
+    background: #ffffff;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .qr-text-block {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .qr-heading {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.68rem;
+    font-weight: 800;
+    color: #0f172a;
+    letter-spacing: 0.04em;
+  }
+
+  .qr-desc {
+    font-size: 0.68rem;
+    color: #475569;
+    margin: 0;
+    line-height: 1.3;
+  }
+
+  .qr-crypto-cert {
+    font-size: 0.64rem;
+    color: #64748b;
+    margin: 0;
+  }
+
+  /* LIQUIDACIÓN TRIBUTARIA */
+  .footer-right-col {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .liquidacion-card {
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    padding: 10px 14px;
+    background-color: #ffffff;
+  }
+
+  .liquidacion-heading {
+    display: block;
+    font-size: 0.68rem;
+    font-weight: 800;
+    color: #475569;
+    letter-spacing: 0.04em;
+    margin-bottom: 8px;
+    border-bottom: 1px solid #e2e8f0;
+    padding-bottom: 4px;
+  }
+
+  .liq-rows {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .liq-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.78rem;
+  }
+
+  .liq-lbl {
+    color: #475569;
+  }
+
+  .liq-val {
+    color: #0f172a;
+  }
+
+  .total-navy-box {
+    background-color: #0f172a;
+    color: #ffffff;
+    border-radius: 6px;
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 10px;
+  }
+
+  .total-navy-left {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .total-title {
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+  }
+
+  .total-currency {
+    font-size: 0.65rem;
+    color: #94a3b8;
+  }
+
+  .total-navy-right {
+    font-size: 1.35rem;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+  }
+
+  .legal-footnote {
+    font-size: 0.64rem;
+    color: #94a3b8;
+    margin: 4px 0 0 0;
+    text-align: right;
+    line-height: 1.3;
+  }
+
+  /* RESPONSIVE */
+  @media (max-width: 768px) {
+    .sheet-header {
+      grid-template-columns: 1fr;
+    }
+
+    .receptor-body {
+      grid-template-columns: 1fr;
+    }
+
+    .sheet-footer {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  /* MEDIA PRINT */
+  @media print {
+    .topbar,
+    .sidebar,
+    .detalle-topbar,
+    .skip-link,
+    .page-header {
+      display: none !important;
+    }
+
+    .app-main {
+      margin: 0 !important;
+      padding: 0 !important;
+    }
+
+    .page-content {
+      padding: 0 !important;
+    }
+
+    .detalle-wrapper {
+      max-width: 100% !important;
+      padding: 0 !important;
+      margin: 0 !important;
+    }
+
+    .invoice-sheet {
+      border: none !important;
+      box-shadow: none !important;
+      border-radius: 0 !important;
+    }
+  }
+}

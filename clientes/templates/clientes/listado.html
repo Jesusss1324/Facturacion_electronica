@@ -1,0 +1,105 @@
+{% extends 'layouts/app.html' %}
+{% load static %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/pages/clientes.css' %}">{% endblock %}
+{% block extra_js %}<script src="{% static 'js/pages/clientes.js' %}" defer></script>{% endblock %}
+{% block messages %}{% endblock %}
+{% block page_header %}
+<header class="page-header clients-header">
+  <div>
+    <div class="clients-title"><h1>Clientes</h1><span class="badge badge-info">Directorio e-CF</span></div>
+    <p class="text-muted">Consulta y administra los clientes registrados para la emisión de comprobantes electrónicos.</p>
+  </div>
+  <a class="btn btn-primary" href="{% url 'clientes:crear' %}">{% include 'includes/icon.html' with name='plus' %} Nuevo cliente</a>
+</header>
+{% endblock %}
+{% block content %}
+<div data-client-directory>
+  <div data-client-feedback>{% include 'includes/messages.html' %}</div>
+  <div class="alert alert-danger" data-directory-error role="alert" hidden>No pudimos actualizar el directorio. Inténtalo nuevamente.</div>
+  <div class="card clients-toolbar">
+    <form class="clients-search" action="{% url 'clientes:listado' %}" method="get" role="search" data-search-form>
+      <label class="sr-only" for="client-search">Buscar por RNC, cédula o razón social</label>
+      <input class="form-control" id="client-search" type="search" name="q" value="{{ query }}" maxlength="150" placeholder="Buscar por RNC, cédula o razón social..." autocomplete="off">
+      <input type="hidden" name="estado" value="{{ estado }}">
+      <button type="submit" class="search-button" aria-label="Buscar clientes">{% include 'includes/icon.html' with name='search' %}</button>
+    </form>
+    <nav class="segmented-control" aria-label="Filtrar clientes por estado">
+      {% for filtro in filtros %}
+      <a href="{{ filtro.url }}" class="segment{% if estado == filtro.key %} is-selected{% endif %}" data-directory-link{% if estado == filtro.key %} aria-current="true"{% endif %}>{{ filtro.label }} <span class="segment-count">{{ filtro.count }}</span></a>
+      {% endfor %}
+    </nav>
+    <p class="clients-count"><span>Registros:</span> <strong>{{ page_obj.paginator.count }} cliente{{ page_obj.paginator.count|pluralize:'s' }}</strong></p>
+  </div>
+  <div class="card clients-loading" data-directory-loading role="status" hidden>
+    <span class="sr-only">Cargando clientes…</span>
+    <div class="skeleton skeleton-heading" aria-hidden="true"></div>
+    {% for row in '123456' %}<div class="skeleton skeleton-row" aria-hidden="true"></div>{% endfor %}
+    <div class="skeleton skeleton-footer" aria-hidden="true"></div>
+  </div>
+  <section class="card clients-results" data-directory-results aria-label="Directorio de clientes" tabindex="-1">
+    {% if page_obj.object_list %}
+    <p class="clients-scroll-hint">Desliza para ver todas las columnas.</p>
+    <div class="table-container" tabindex="0" role="region" aria-label="Tabla de clientes">
+      <table class="data-table clients-table">
+        <caption class="sr-only">Clientes registrados, información de contacto, estado y acciones</caption>
+        <thead><tr><th scope="col">RNC / Cédula</th><th scope="col">Razón social / Nombre</th><th scope="col">Teléfono</th><th scope="col">Estado</th><th scope="col" class="text-right">Acciones</th></tr></thead>
+        <tbody>
+        {% for cliente in page_obj %}
+        <tr{% if not cliente.activo %} class="client-inactive"{% endif %}>
+          <td><span class="client-document tabular-numbers">{{ cliente.identificacion_display }}</span><span class="client-secondary">{% if cliente.tipo_identificacion == 'RNC' %}RNC Jurídico{% else %}Cédula Personal{% endif %}</span></td>
+          <td><a class="client-name" href="{% url 'clientes:detalle' pk=cliente.id %}">{{ cliente.nombre }}</a><span class="client-secondary">{{ cliente.direccion }}</span></td>
+          <td class="client-phone tabular-numbers">{{ cliente.telefono }}</td>
+          <td><span class="badge {% if cliente.activo %}badge-success{% else %}badge-neutral{% endif %} client-status">{% if cliente.activo %}{% include 'includes/icon.html' with name='check-circle' %} Activo{% else %}{% include 'includes/icon.html' with name='minus-circle' %} Inactivo{% endif %}</span></td>
+          <td>
+            <div class="client-actions">
+              <a class="client-view" href="{% url 'clientes:detalle' pk=cliente.id %}" aria-label="Ver {{ cliente.nombre }}">{% include 'includes/icon.html' with name='eye' %} Ver</a>
+              <button class="btn btn-icon" type="button" popovertarget="client-actions-{{ cliente.id }}" aria-label="Acciones de {{ cliente.nombre }}">{% include 'includes/icon.html' with name='more' %}</button>
+              <div class="action-popover" id="client-actions-{{ cliente.id }}" popover="auto" aria-label="Acciones de {{ cliente.nombre }}">
+                <a href="{% url 'clientes:detalle' pk=cliente.id %}">{% include 'includes/icon.html' with name='eye' %} Ver detalles</a>
+                <a href="{% url 'clientes:editar' pk=cliente.id %}">{% include 'includes/icon.html' with name='edit' %} Editar</a>
+                {% if cliente.activo %}<a href="{% url 'comprobantes:nueva' %}?cliente={{ cliente.id }}">{% include 'includes/icon.html' with name='invoices' %} Crear factura <span class="badge badge-info">e-CF</span></a>{% endif %}
+                <form method="post" action="{% url 'clientes:cambiar_estado' pk=cliente.id %}" data-state-form data-client-name="{{ cliente.nombre }}" data-action-label="{% if cliente.activo %}Inactivar{% else %}Reactivar{% endif %}">
+                  {% csrf_token %}<input type="hidden" name="activo" value="{% if cliente.activo %}0{% else %}1{% endif %}">
+                  <input type="hidden" name="q" value="{{ query }}"><input type="hidden" name="estado" value="{{ estado }}"><input type="hidden" name="page" value="{{ page_obj.number }}">
+                  <button class="{% if cliente.activo %}text-danger{% endif %}" type="submit">{% include 'includes/icon.html' with name='minus-circle' %} {% if cliente.activo %}Inactivar{% else %}Reactivar{% endif %} cliente</button>
+                </form>
+              </div>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <footer class="card-footer">
+      <p class="text-muted">Mostrando <strong>{{ page_obj.start_index }}–{{ page_obj.end_index }}</strong> de <strong>{{ page_obj.paginator.count }}</strong> clientes</p>
+      <nav class="pagination" aria-label="Páginas de clientes">
+        {% if previous_url %}<a href="{{ previous_url }}" data-directory-link aria-label="Página anterior">‹</a>{% else %}<span class="pagination-disabled" aria-disabled="true" aria-label="Página anterior">‹</span>{% endif %}
+        {% for item in pagination %}{% if item.url %}<a href="{{ item.url }}" data-directory-link{% if item.current %} class="is-current" aria-current="page"{% endif %} aria-label="Página {{ item.label }}">{{ item.label }}</a>{% else %}<span aria-hidden="true">{{ item.label }}</span>{% endif %}{% endfor %}
+        {% if next_url %}<a href="{{ next_url }}" data-directory-link aria-label="Página siguiente">›</a>{% else %}<span class="pagination-disabled" aria-disabled="true" aria-label="Página siguiente">›</span>{% endif %}
+      </nav>
+    </footer>
+    {% elif total_clientes %}
+    <div class="empty-state clients-empty">
+      <span class="empty-state-icon">{% include 'includes/icon.html' with name='search' %}</span>
+      <h2>No se encontraron clientes</h2>
+      <p class="text-muted">Revisa el RNC, la cédula o el nombre ingresado, o cambia los filtros de estado.</p>
+      <a class="btn btn-soft" href="{% url 'clientes:listado' %}" data-directory-link>{% include 'includes/icon.html' with name='reset' %} Limpiar filtros de búsqueda</a>
+    </div>
+    {% else %}
+    <div class="empty-state clients-empty">
+      <span class="empty-state-icon">{% include 'includes/icon.html' with name='users' %}</span>
+      <h2>No hay clientes registrados todavía</h2>
+      <p class="text-muted">Registra tu primer cliente para comenzar a emitir comprobantes electrónicos.</p>
+      <a class="btn btn-primary" href="{% url 'clientes:crear' %}">{% include 'includes/icon.html' with name='users' %} Registrar primer cliente</a>
+    </div>
+    {% endif %}
+  </section>
+</div>
+<dialog class="dialog client-confirm" aria-labelledby="client-confirm-title" aria-describedby="client-confirm-description" data-client-confirm>
+  <h2 id="client-confirm-title"></h2>
+  <p id="client-confirm-description" class="text-muted"></p>
+  <div class="form-actions"><button class="btn btn-secondary" type="button" data-confirm-cancel>Cancelar</button><button class="btn btn-primary" type="button" data-confirm-accept>Confirmar</button></div>
+</dialog>
+<p class="sr-only" role="status" aria-live="polite" data-directory-announcement></p>
+{% endblock %}

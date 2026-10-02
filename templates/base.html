@@ -1,0 +1,22 @@
+{% load static %}
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}{{ screen.title|default:'Facturación Electrónica' }}{% endblock %} | Facturación Electrónica</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'css/global.css' %}">
+  {% block extra_css %}{% endblock %}
+  <script src="{% static 'js/app.js' %}" defer></script>
+  <script src="{% static 'js/async-pagination.js' %}" defer></script>
+  {% block extra_js %}{% endblock %}
+</head>
+<body>
+  <a class="skip-link" href="#main-content">Ir al contenido principal</a>
+  {% include 'includes/icons.html' %}
+  {% block body %}{% endblock %}
+</body>
+</html>

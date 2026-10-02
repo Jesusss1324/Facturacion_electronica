@@ -1,0 +1,227 @@
+{% extends 'layouts/app.html' %}
+{% load static ui_format %}
+
+{% block extra_css %}
+  <link rel="stylesheet" href="{% static 'css/pages/comprobante-xml.css' %}">
+{% endblock %}
+
+{% block extra_js %}
+  <script src="{% static 'js/pages/comprobante-xml.js' %}" defer></script>
+{% endblock %}
+
+{% block content %}
+<div class="xml-view-container">
+
+  {# BARRA SUPERIOR DE ACCIONES Y ENLACES #}
+  <div class="xml-topbar">
+    <div class="xml-topbar-left">
+      <a href="{% url 'comprobantes:detalle' pk=factura.id %}" class="btn btn-outline btn-sm">
+        <svg class="icon icon-xs" aria-hidden="true" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+        </svg>
+        <span>Volver a la factura</span>
+      </a>
+
+      <a href="{% url 'comprobantes:historial' %}" class="btn btn-link btn-sm text-muted">
+        Historial
+      </a>
+    </div>
+
+    <div class="xml-topbar-right">
+      <button type="button" class="btn btn-outline btn-sm" id="btn-copiar-xml-completo">
+        <svg class="icon icon-xs" aria-hidden="true" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+        </svg>
+        <span id="btn-copiar-xml-label">Copiar XML completo</span>
+      </button>
+
+      <button type="button" class="btn btn-primary btn-sm btn-download-xml" id="btn-descargar-xml-file" data-filename="e-CF_{{ factura.e_ncf }}.xml">
+        <svg class="icon icon-xs" aria-hidden="true" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+        </svg>
+        <span>Descargar XML (.xml)</span>
+      </button>
+    </div>
+  </div>
+
+  {# TARJETAS RESUMEN DE METADATOS TÉCNICOS FISCALES #}
+  <div class="xml-meta-cards">
+    
+    <div class="meta-card card">
+      <div class="meta-card-icon text-primary">
+        <svg class="icon icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+        </svg>
+      </div>
+      <div class="meta-card-body">
+        <span class="meta-card-label">COMPROBANTE FISCAL</span>
+        <strong class="meta-card-title code-font">{{ factura.e_ncf }}</strong>
+        <span class="meta-card-sub text-muted">Tipo {{ factura.tipo_ecf }} · {{ factura.tipo_display }}</span>
+      </div>
+    </div>
+
+    <div class="meta-card card">
+      <div class="meta-card-icon text-success">
+        <svg class="icon icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+        </svg>
+      </div>
+      <div class="meta-card-body">
+        <span class="meta-card-label">ESTÁNDAR & ESQUEMA</span>
+        <strong class="meta-card-title">DGII e-CF v1.0</strong>
+        <span class="meta-card-sub text-success">Esquema XSD Validado ✔</span>
+      </div>
+    </div>
+
+    <div class="meta-card card">
+      <div class="meta-card-icon text-primary">
+        <svg class="icon icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+        </svg>
+      </div>
+      <div class="meta-card-body">
+        <span class="meta-card-label">SELLO DIGITAL XML-DSIG</span>
+        <strong class="meta-card-title code-font">RSA-SHA256</strong>
+        <span class="meta-card-sub text-muted">Certificado X.509 Autorizado</span>
+      </div>
+    </div>
+
+    <div class="meta-card card">
+      <div class="meta-card-icon text-secondary">
+        <svg class="icon icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2 1 3 3 3h10c2 0 3-1 3-3V7c0-2-1-3-3-3H7c-2 0-3 1-3 3zM9 9h6M9 13h6M9 17h3" />
+        </svg>
+      </div>
+      <div class="meta-card-body">
+        <span class="meta-card-label">DOCUMENTO XML</span>
+        <strong class="meta-card-title code-font">{{ tamano_kb }} KB</strong>
+        <span class="meta-card-sub text-muted">{{ total_lineas }} líneas · UTF-8</span>
+      </div>
+    </div>
+
+  </div>
+
+  {# CONTENIDO PRINCIPAL: VISOR DE CÓDIGO + INSPECTOR DE NODOS #}
+  <div class="xml-main-grid">
+
+    {# COLUMNA IZQUIERDA: VISOR DE CÓDIGO XML CON NUMERACIÓN DE LÍNEAS #}
+    <section class="xml-code-viewer card" aria-label="Visualizador de código fuente XML">
+      <div class="viewer-header">
+        <div class="viewer-filename-box">
+          <svg class="icon icon-xs text-muted" aria-hidden="true" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+          <span class="viewer-filename code-font">e-CF_{{ factura.e_ncf }}.xml</span>
+        </div>
+
+        <div class="viewer-controls">
+          <span class="badge badge-outline-subtle code-font">eCF xmlns="http://dgii.gov.do/ecf/v1.0"</span>
+          <button type="button" class="btn-copy-code" id="btn-quick-copy" title="Copiar código XML">
+            <svg class="icon icon-xs" aria-hidden="true" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+            </svg>
+            <span id="quick-copy-text">Copiar</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="viewer-editor-wrap">
+        <pre class="xml-editor-pre"><code class="xml-editor-code" id="raw-xml-content">{% for num, linea in lineas_xml %}<div class="code-line"><span class="line-num" aria-hidden="true">{{ num }}</span><span class="line-text">{{ linea }}</span></div>{% endfor %}</code></pre>
+      </div>
+    </section>
+
+    {# COLUMNA DERECHA: INSPECTOR DE ESTRUCTURA Y NODOS XML #}
+    <aside class="xml-nodes-inspector" aria-label="Inspector de nodos XML de la factura">
+      <div class="inspector-card card">
+        <header class="inspector-header">
+          <svg class="icon icon-xs text-primary" aria-hidden="true" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+          </svg>
+          <h2 class="inspector-title">Estructura e-CF Fiscal</h2>
+        </header>
+
+        {# Nodo 1: Encabezado #}
+        <details class="inspector-node" open>
+          <summary class="node-summary">
+            <strong class="node-tag">&lt;Encabezado&gt;</strong>
+            <span class="badge badge-subtle">IdDoc / Emisor / Receptor</span>
+          </summary>
+          <div class="node-details">
+            <div class="node-item">
+              <span class="node-lbl">e-NCF:</span>
+              <strong class="code-font">{{ factura.e_ncf }}</strong>
+            </div>
+            <div class="node-item">
+              <span class="node-lbl">RNC Emisor:</span>
+              <span class="code-font">{{ emisor.rnc_raw }}</span>
+            </div>
+            <div class="node-item">
+              <span class="node-lbl">RNC Receptor:</span>
+              <span class="code-font">{{ cliente.identificacion }}</span>
+            </div>
+            <div class="node-item">
+              <span class="node-lbl">Monto Total:</span>
+              <strong class="code-font text-heading">{{ factura.monto_total|moneda_rd }}</strong>
+            </div>
+          </div>
+        </details>
+
+        {# Nodo 2: DetallesItems #}
+        <details class="inspector-node" open>
+          <summary class="node-summary">
+            <strong class="node-tag">&lt;DetallesItems&gt;</strong>
+            <span class="badge badge-subtle">Líneas de facturación</span>
+          </summary>
+          <div class="node-details">
+            <p class="node-desc text-muted">
+              Contiene {{ factura.total_conceptos }} concepto{{ factura.total_conceptos|pluralize }} facturado{{ factura.total_conceptos|pluralize }} con alícuota legal del 18% e indicador de facturación 1.
+            </p>
+          </div>
+        </details>
+
+        {# Nodo 3: Signature #}
+        <details class="inspector-node" open>
+          <summary class="node-summary">
+            <strong class="node-tag">&lt;Signature&gt;</strong>
+            <span class="badge badge-success-subtle">Firma Digital Válida</span>
+          </summary>
+          <div class="node-details">
+            <div class="node-item">
+              <span class="node-lbl">Algoritmo:</span>
+              <span class="code-font">rsa-sha256</span>
+            </div>
+            <div class="node-item">
+              <span class="node-lbl">Canonicalización:</span>
+              <span class="code-font">xml-c14n-20010315</span>
+            </div>
+            <div class="node-item">
+              <span class="node-lbl">Transform:</span>
+              <span class="code-font">enveloped-signature</span>
+            </div>
+            <div class="node-item">
+              <span class="node-lbl">Emisor Cert:</span>
+              <span class="small text-muted">DGII CA Raíz Digital</span>
+            </div>
+          </div>
+        </details>
+
+        {# Enlaces rápidos operacionales #}
+        <div class="inspector-actions">
+          <button type="button" class="btn btn-outline btn-sm w-100" id="btn-descargar-xml-secondary" data-filename="e-CF_{{ factura.e_ncf }}.xml">
+            Descargar archivo .xml
+          </button>
+          <a href="{% url 'comprobantes:pdf' pk=factura.id %}" class="btn btn-link btn-sm w-100 text-center">
+            Ver representación PDF &rarr;
+          </a>
+        </div>
+
+      </div>
+    </aside>
+
+  </div>
+
+</div>
+
+{# Hidden textarea for robust copying #}
+<textarea id="hidden-xml-payload" style="display:none;" aria-hidden="true">{{ xml_raw }}</textarea>
+{% endblock %}

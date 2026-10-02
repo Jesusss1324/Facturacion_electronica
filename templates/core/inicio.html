@@ -1,0 +1,108 @@
+{% extends 'layouts/app.html' %}
+{% load static ui_format tz %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/pages/inicio.css' %}">{% endblock %}
+
+{% block page_header %}
+<header class="card dashboard-welcome">
+  <div class="dashboard-welcome-copy">
+    <div class="dashboard-greeting">
+      <h1>{{ saludo }}, {{ nombre_usuario }}</h1>
+      <span class="badge badge-success session-badge">{% include 'includes/icon.html' with name='shield' %} Sesión activa</span>
+    </div>
+    <p class="text-muted">Aquí tienes un resumen de la actividad reciente y el estado de tus comprobantes electrónicos.</p>
+  </div>
+  <div class="page-actions">
+    <a class="btn btn-secondary" href="{% url 'clientes:crear' %}">{% include 'includes/icon.html' with name='plus' %} Nuevo cliente</a>
+    <a class="btn btn-primary" href="{% url 'comprobantes:nueva' %}">{% include 'includes/icon.html' with name='plus' %} Nueva factura</a>
+  </div>
+</header>
+{% endblock %}
+
+{% block content %}
+<section class="dashboard-stats" aria-label="Resumen de facturación">
+  <article class="card stat-card">
+    <div class="stat-card-header"><h2>Facturas emitidas</h2><span class="stat-icon stat-icon-primary">{% include 'includes/icon.html' with name='invoices' %}</span></div>
+    <p class="stat-value tabular-numbers">{{ resumen.emitidas }}</p>
+    <p class="stat-description">Total de comprobantes registrados</p>
+  </article>
+  <article class="card stat-card">
+    <div class="stat-card-header"><h2>Facturas aprobadas</h2><span class="stat-icon stat-icon-success">{% include 'includes/icon.html' with name='check-circle' %}</span></div>
+    <p class="stat-value tabular-numbers">{{ resumen.aprobadas }}</p>
+    <p class="stat-description">Comprobantes con resultado favorable</p>
+  </article>
+  <article class="card stat-card">
+    <div class="stat-card-header"><h2>Facturas rechazadas</h2><span class="stat-icon stat-icon-danger">{% include 'includes/icon.html' with name='close-circle' %}</span></div>
+    <p class="stat-value tabular-numbers">{{ resumen.rechazadas }}</p>
+    <p class="stat-description">Comprobantes con resultado rechazado</p>
+  </article>
+  <article class="card stat-card">
+    <div class="stat-card-header"><h2>Clientes activos</h2><span class="stat-icon stat-icon-primary">{% include 'includes/icon.html' with name='users' %}</span></div>
+    <p class="stat-value tabular-numbers">{{ resumen.clientes_activos }}</p>
+    <p class="stat-description">Clientes disponibles para facturar</p>
+  </article>
+</section>
+
+<section class="card dashboard-invoices" aria-labelledby="recent-invoices-title">
+  <header class="card-header">
+    <div>
+      <h2 id="recent-invoices-title">Facturas recientes</h2>
+      <p class="text-muted">Últimos comprobantes registrados en el sistema.</p>
+    </div>
+    <a class="link-with-icon" href="{% url 'comprobantes:historial' %}">Ver historial completo {% include 'includes/icon.html' with name='arrow-right' %}</a>
+  </header>
+
+  {% if facturas_recientes %}
+  <p class="dashboard-table-hint" id="invoice-scroll-hint">Desliza para ver todas las columnas.</p>
+  <div class="table-container dashboard-table-scroll" role="region" aria-label="Tabla de facturas recientes" aria-describedby="invoice-scroll-hint" tabindex="0">
+    <table class="data-table dashboard-invoice-table">
+      <caption class="sr-only">Las cinco facturas más recientes y su estado</caption>
+      <thead>
+        <tr>
+          <th scope="col">e-NCF</th>
+          <th scope="col">Cliente</th>
+          <th scope="col">Tipo</th>
+          <th scope="col">Fecha de emisión</th>
+          <th scope="col" class="text-right">Total (RD$)</th>
+          <th scope="col">Estado</th>
+          <th scope="col" class="text-right">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% timezone 'America/Santo_Domingo' %}
+        {% for item in facturas_recientes %}
+        <tr>
+          <td><a class="invoice-reference tabular-numbers" href="{% url 'comprobantes:detalle' pk=item.factura.id %}">{{ item.factura.e_ncf }}</a></td>
+          <td>
+            <span class="invoice-client-name">{{ item.cliente.nombre }}</span>
+            <span class="invoice-client-id">{{ item.cliente.tipo_identificacion }}: {{ item.cliente.identificacion_display }}</span>
+          </td>
+          <td><span class="badge badge-info invoice-type">E{{ item.factura.tipo_ecf }} <span aria-hidden="true">·</span> {{ item.factura.tipo_display }}</span></td>
+          <td><time class="invoice-date tabular-numbers" datetime="{{ item.factura.fecha_emision|date:'c' }}">{{ item.factura.fecha_emision|date:'d/m/Y' }}<span>{{ item.factura.fecha_emision|date:'h:i A' }}</span></time></td>
+          <td class="text-right invoice-amount tabular-numbers">{{ item.factura.monto_total|moneda_rd }}</td>
+          <td>
+            <span class="badge {% if item.factura.estado == 'aprobado' %}badge-success{% else %}badge-danger{% endif %} invoice-status">
+              {% if item.factura.estado == 'aprobado' %}{% include 'includes/icon.html' with name='check-circle' %}{% else %}{% include 'includes/icon.html' with name='close-circle' %}{% endif %}
+              {{ item.factura.estado_display }}
+            </span>
+          </td>
+          <td class="text-right"><a class="invoice-detail-link" href="{% url 'comprobantes:detalle' pk=item.factura.id %}" aria-label="Ver detalle de la factura {{ item.factura.e_ncf }}">Ver detalle</a></td>
+        </tr>
+        {% endfor %}
+        {% endtimezone %}
+      </tbody>
+    </table>
+  </div>
+  <footer class="card-footer">
+    <p class="text-muted">Mostrando <strong>{{ facturas_recientes|length }}</strong> de <strong>{{ resumen.emitidas }}</strong> facturas registradas</p>
+    <a class="btn btn-soft" href="{% url 'comprobantes:historial' %}">Ir al historial completo {% include 'includes/icon.html' with name='invoices' %}</a>
+  </footer>
+  {% else %}
+  <div class="empty-state">
+    <span class="empty-state-icon">{% include 'includes/icon.html' with name='invoices' %}</span>
+    <h3>No hay facturas registradas todavía</h3>
+    <p class="text-muted">Crea tu primera factura electrónica para comenzar.</p>
+    <a class="btn btn-primary" href="{% url 'comprobantes:nueva' %}">{% include 'includes/icon.html' with name='plus' %} Nueva factura</a>
+  </div>
+  {% endif %}
+</section>
+{% endblock %}

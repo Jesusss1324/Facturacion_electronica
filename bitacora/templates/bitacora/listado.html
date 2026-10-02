@@ -1,0 +1,475 @@
+{% extends 'layouts/app.html' %}
+{% load static ui_format %}
+
+{% block title %}Logs de eventos | Facturación Electrónica{% endblock %}
+
+{% block extra_css %}
+  <link rel="stylesheet" href="{% static 'css/pages/logs.css' %}">
+{% endblock %}
+
+{% block extra_js %}
+  <script src="{% static 'js/pages/logs.js' %}" defer></script>
+{% endblock %}
+
+{% block page_header %}
+<header class="page-header logs-header">
+  <div class="logs-header-meta">
+    <div class="logs-category-pill">
+      <span>AUDITORÍA REGULATORIA DGII</span>
+      <span class="dot-sep">·</span>
+      <span>Trazabilidad Inmutable e-CF</span>
+    </div>
+    <h1 class="page-title logs-title">Logs de eventos</h1>
+    <p class="page-description text-muted logs-subtitle">
+      Consulta la actividad técnica, transiciones de estado y respuestas telemáticas de facturación electrónica registradas por el sistema con sello temporal milimétrico.
+    </p>
+  </div>
+  <div class="page-actions logs-header-actions">
+    <a href="{% url 'bitacora:listado' %}" class="btn btn-outline btn-sm">
+      <svg class="icon icon-xs" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+      </svg>
+      <span>Actualizar registro</span>
+    </a>
+    <a href="{% url 'comprobantes:historial' %}" class="btn btn-primary btn-sm">
+      <svg class="icon icon-xs" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+      </svg>
+      <span>Ver flujo e-CF canónico</span>
+    </a>
+  </div>
+</header>
+{% endblock %}
+
+{% block content %}
+<div class="logs-page">
+
+  {# Banner de Seguridad e Inmutabilidad #}
+  <section class="logs-security-banner" aria-label="Aviso de trazabilidad fiscal">
+    <div class="security-banner-content">
+      <div class="security-icon-circle">
+        <svg class="icon icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+        </svg>
+      </div>
+      <div class="security-text-block">
+        <strong class="security-heading">Registro Criptográfico Inmutable (Solo lectura)</strong>
+        <span class="security-desc">
+          Los eventos de este log están protegidos con firmas encadenadas según los requisitos de auditoría de la Ley 32-23 y la Norma General 06-2023.
+        </span>
+      </div>
+    </div>
+  </section>
+
+  {# Tarjeta de Búsqueda y Filtros #}
+  <section class="logs-filter-card">
+    <form method="get" action="{% url 'bitacora:listado' %}" id="logs-filter-form">
+      {# Fila 1: Buscador y Exportación #}
+      <div class="filter-search-row">
+        <div class="search-input-wrapper">
+          <svg class="search-icon-left" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+          <input
+            type="text"
+            name="q"
+            id="search-query-input"
+            class="logs-search-input"
+            placeholder="Buscar por e-NCF (ej. E310000000004), usuario, referencia, trackId o código..."
+            value="{{ query }}"
+          >
+          {% if query %}
+            <button type="button" class="clear-search-btn" id="btn-clear-search" aria-label="Limpiar búsqueda">&times;</button>
+          {% endif %}
+        </div>
+        <button type="submit" class="btn btn-primary btn-sm">Filtrar</button>
+        <a href="{% url 'bitacora:listado' %}?{{ clean_query }}&format=csv" class="btn btn-outline btn-sm">
+          <svg class="icon icon-xs" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+          </svg>
+          <span>Exportar CSV</span>
+        </a>
+      </div>
+
+      {# Fila 2: Cuadrícula de 4 Filtros #}
+      <div class="filter-secondary-grid" style="margin-top: var(--space-3);">
+        {# 1. Rango Auditoría #}
+        <div class="filter-group">
+          <label class="filter-label">
+            <svg class="icon icon-xs" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+            <span>Rango Auditoría</span>
+          </label>
+          <div class="filter-date-range">
+            <input type="text" name="desde" class="filter-date-input" placeholder="Desde (DD/MM/AAAA)" value="{{ desde_actual }}">
+            <span class="date-sep">—</span>
+            <input type="text" name="hasta" class="filter-date-input" placeholder="Hasta (DD/MM/AAAA)" value="{{ hasta_actual }}">
+          </div>
+        </div>
+
+        {# 2. Usuario / Proceso #}
+        <div class="filter-group">
+          <label class="filter-label" for="filter-usuario">
+            <svg class="icon icon-xs" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+            </svg>
+            <span>Usuario / Proceso</span>
+          </label>
+          <select name="usuario" id="filter-usuario" class="filter-select" onchange="this.form.submit()">
+            <option value="todos"{% if not usuario_actual or usuario_actual == 'todos' %} selected{% endif %}>Todos los usuarios (Todos)</option>
+            <option value="operador"{% if usuario_actual == 'operador' %} selected{% endif %}>{{ nombre_sesion }} (Operador)</option>
+            <option value="sistema"{% if usuario_actual == 'sistema' %} selected{% endif %}>Sistema (Daemon / Async)</option>
+          </select>
+        </div>
+
+        {# 3. Módulo de Sistema #}
+        <div class="filter-group">
+          <label class="filter-label" for="filter-modulo">
+            <svg class="icon icon-xs" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+            </svg>
+            <span>Módulo de Sistema</span>
+          </label>
+          <select name="modulo" id="filter-modulo" class="filter-select" onchange="this.form.submit()">
+            <option value="todos"{% if not modulo_actual or modulo_actual == 'todos' %} selected{% endif %}>Todos los módulos</option>
+            <option value="dgii"{% if modulo_actual == 'dgii' %} selected{% endif %}>Servicio DGII</option>
+            <option value="firma"{% if modulo_actual == 'firma' %} selected{% endif %}>Firma digital (XML-DSig)</option>
+            <option value="xml"{% if modulo_actual == 'xml' %} selected{% endif %}>XML e-CF</option>
+            <option value="facturacion"{% if modulo_actual == 'facturacion' %} selected{% endif %}>Facturación</option>
+            <option value="clientes"{% if modulo_actual == 'clientes' %} selected{% endif %}>Clientes</option>
+            <option value="auth"{% if modulo_actual == 'auth' %} selected{% endif %}>Autenticación</option>
+            <option value="pdf"{% if modulo_actual == 'pdf' %} selected{% endif %}>Representación PDF</option>
+          </select>
+        </div>
+
+        {# 4. Resultado Técnico #}
+        <div class="filter-group">
+          <label class="filter-label" for="filter-resultado">
+            <svg class="icon icon-xs" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span>Resultado Técnico</span>
+          </label>
+          <select name="resultado" id="filter-resultado" class="filter-select" onchange="this.form.submit()">
+            <option value="todos"{% if not resultado_actual or resultado_actual == 'todos' %} selected{% endif %}>Todos los estados</option>
+            <option value="correcto"{% if resultado_actual == 'correcto' %} selected{% endif %}>Correcto</option>
+            <option value="informativo"{% if resultado_actual == 'informativo' %} selected{% endif %}>Informativo</option>
+            <option value="advertencia"{% if resultado_actual == 'advertencia' %} selected{% endif %}>Advertencia</option>
+            <option value="error"{% if resultado_actual == 'error' %} selected{% endif %}>Error</option>
+          </select>
+        </div>
+      </div>
+
+      {# Fila 3: Chips de Filtros Activos #}
+      {% if hay_filtros %}
+      <div class="active-filters-row">
+        <div class="chips-container">
+          <span class="chips-label">Filtros aplicados:</span>
+          {% for f in filtros_activos %}
+            <span class="filter-chip">
+              <span>{{ f.label }}</span>
+            </span>
+          {% endfor %}
+        </div>
+        <a href="{% url 'bitacora:listado' %}" class="clear-all-link">
+          <svg class="icon icon-xs" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+          </svg>
+          <span>Limpiar todos los filtros</span>
+        </a>
+      </div>
+      {% endif %}
+    </form>
+  </section>
+
+  {# Tarjeta de Resultados / Tabla #}
+  <div class="logs-table-card">
+    <div class="table-top-bar">
+      <div class="table-counter-group">
+        <span class="table-counter">
+          {% if page_obj.object_list %}
+            Mostrando <strong>{{ page_obj.start_index }}-{{ page_obj.end_index }}</strong> de <strong>{{ eventos_filtrados }}</strong> registros
+          {% else %}
+            Mostrando 0 registros
+          {% endif %}
+        </span>
+        <span class="counter-divider">·</span>
+        <span class="table-total-count text-muted">{{ total_eventos }} eventos auditados</span>
+      </div>
+      <span class="table-timezone text-muted">
+        Zona horaria: America/Santo_Domingo (UTC-4)
+      </span>
+    </div>
+
+    {% if page_obj.object_list %}
+      <div class="table-responsive">
+        <table class="logs-table">
+          <thead>
+            <tr>
+              <th scope="col">FECHA Y HORA (MS)</th>
+              <th scope="col">USUARIO / PROCESO</th>
+              <th scope="col">MÓDULO</th>
+              <th scope="col">EVENTO REGISTRADO</th>
+              <th scope="col">REFERENCIA E-CF</th>
+              <th scope="col">RESULTADO</th>
+              <th scope="col" style="text-align: right;">ACCIÓN</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for ev in page_obj %}
+            <tr data-event='{"id": {{ ev.id }}, "titulo": "{{ ev.titulo|escapejs }}", "descripcion": "{{ ev.descripcion|escapejs }}", "timestamp": "{{ ev.timestamp_display|escapejs }}", "usuario": "{% if ev.es_sistema %}Sistema{% else %}{{ nombre_sesion|escapejs }}{% endif %}", "tipo_usuario": "{{ ev.tipo_usuario|escapejs }}", "modulo_display": "{{ ev.modulo_display|escapejs }}", "referencia_codigo": "{{ ev.referencia_codigo|escapejs }}", "resultado": "{{ ev.resultado|escapejs }}", "resultado_display": "{{ ev.resultado_display|escapejs }}", "hash": "{{ ev.hash_seguridad|escapejs }}", "ip": "{{ ev.ip|escapejs }}", "detalles": { "id_evento": "{{ ev.detalles_tecnicos.id_evento|escapejs }}", "protocolo": "{{ ev.detalles_tecnicos.protocolo|escapejs }}", "metodo": "{{ ev.detalles_tecnicos.metodo|escapejs }}", "endpoint": "{{ ev.detalles_tecnicos.endpoint|escapejs }}", "codigo_http": {{ ev.detalles_tecnicos.codigo_http }}, "tiempo_respuesta_ms": {{ ev.detalles_tecnicos.tiempo_respuesta_ms }}, "track_id": "{{ ev.detalles_tecnicos.track_id|escapejs }}", "ip_origen": "{{ ev.detalles_tecnicos.ip_origen|escapejs }}", "algoritmo_firma": "{{ ev.detalles_tecnicos.algoritmo_firma|escapejs }}", "digest_sha256": "{{ ev.detalles_tecnicos.digest_sha256|escapejs }}" }}'>
+              {# 1. Fecha y Hora (MS) #}
+              <td class="cell-timestamp">
+                <div>{{ ev.fecha_display }}</div>
+                <div style="font-size: 0.7rem; color: var(--color-muted);">{{ ev.hora_display }}</div>
+              </td>
+
+              {# 2. Usuario / Proceso #}
+              <td>
+                <div class="cell-user">
+                  <div class="user-avatar-badge{% if ev.es_sistema %} is-system{% endif %}">
+                    {% if ev.es_sistema %}
+                      OS
+                    {% else %}
+                      US
+                    {% endif %}
+                  </div>
+                  <div class="user-info-text">
+                    <span class="user-name">{% if ev.es_sistema %}Sistema{% else %}{{ nombre_sesion }}{% endif %}</span>
+                    <span class="user-role">{{ ev.tipo_usuario }}</span>
+                  </div>
+                </div>
+              </td>
+
+              {# 3. Módulo #}
+              <td class="cell-module">
+                <span class="module-pill">{{ ev.modulo_display }}</span>
+              </td>
+
+              {# 4. Evento Registrado #}
+              <td>
+                <div class="cell-event">
+                  <strong class="event-primary-title">{{ ev.titulo }}</strong>
+                  <span class="event-secondary-desc">{{ ev.descripcion }}</span>
+                </div>
+              </td>
+
+              {# 5. Referencia e-CF #}
+              <td class="cell-reference">
+                {% if ev.referencia_tipo == 'factura' and ev.referencia_id %}
+                  <a href="{% url 'comprobantes:detalle' pk=ev.referencia_id %}" class="ref-tag" title="Ver comprobante {{ ev.referencia_codigo }}">
+                    {{ ev.referencia_codigo }}
+                  </a>
+                {% elif ev.referencia_tipo == 'cliente' and ev.referencia_id %}
+                  <a href="{% url 'clientes:detalle' pk=ev.referencia_id %}" class="ref-tag" title="Ver cliente {{ ev.referencia_codigo }}">
+                    {{ ev.referencia_codigo }}
+                  </a>
+                {% else %}
+                  <span class="ref-tag">{{ ev.referencia_codigo }}</span>
+                {% endif %}
+              </td>
+
+              {# 6. Resultado Técnico #}
+              <td class="cell-status">
+                <span class="status-pill status-{{ ev.resultado }}">
+                  <span class="status-icon-dot"></span>
+                  <span>{{ ev.resultado_display }}</span>
+                </span>
+              </td>
+
+              {# 7. Acción #}
+              <td style="text-align: right;">
+                <button type="button" class="btn-inspect" aria-label="Inspeccionar evento {{ ev.id }}">
+                  <svg class="icon icon-xs" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                  </svg>
+                  <span>Inspeccionar</span>
+                </button>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      {# Barra de Paginación #}
+      <div class="logs-pagination-bar">
+        <div class="pagination-summary">
+          Mostrando página <strong>{{ page_obj.number }}</strong> de <strong>{{ paginator.num_pages }}</strong> ({{ eventos_filtrados }} registros totales)
+        </div>
+        <div class="pagination-controls">
+          {% if page_obj.has_previous %}
+            <a href="?page={{ page_obj.previous_page_number }}&{{ clean_query }}" class="page-btn">
+              &lt; Anterior
+            </a>
+          {% else %}
+            <span class="page-btn disabled">&lt; Anterior</span>
+          {% endif %}
+
+          {% for p in paginator.page_range %}
+            {% if p == page_obj.number %}
+              <span class="page-btn is-active">{{ p }}</span>
+            {% elif p <= 3 or p >= paginator.num_pages|add:'-1' or p >= page_obj.number|add:'-1' and p <= page_obj.number|add:'1' %}
+              <a href="?page={{ p }}&{{ clean_query }}" class="page-btn">{{ p }}</a>
+            {% elif p == 4 or p == paginator.num_pages|add:'-2' %}
+              <span class="page-btn disabled">…</span>
+            {% endif %}
+          {% endfor %}
+
+          {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}&{{ clean_query }}" class="page-btn">
+              Siguiente &gt;
+            </a>
+          {% else %}
+            <span class="page-btn disabled">Siguiente &gt;</span>
+          {% endif %}
+        </div>
+      </div>
+
+    {% else %}
+      {# Estado Vacío (Coincide con Image 2) #}
+      <div class="logs-empty-state">
+        <div class="empty-icon-circle">
+          <svg class="icon icon-md" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+        </div>
+        <h3 class="empty-heading">No se encontraron eventos técnicos</h3>
+        <p class="empty-desc">
+          No hay registros con los criterios de búsqueda seleccionados. Revisa el rango de fechas o restablece los filtros.
+        </p>
+        <a href="{% url 'bitacora:listado' %}" class="btn btn-primary btn-sm">
+          <span>Restablecer filtros</span>
+        </a>
+      </div>
+    {% endif %}
+  </div>
+
+  {# Tarjetas Normativas Inferiores (3 columnas de Image 1) #}
+  <section class="logs-normative-grid" aria-label="Garantías normativas de auditoría">
+    {# Tarjeta 1: Integridad XML-DSig #}
+    <div class="normative-card">
+      <div class="normative-header">
+        <svg class="normative-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+        </svg>
+        <span>Integridad XML-DSig</span>
+      </div>
+      <p class="normative-desc">
+        Cada comprobante genera un valor DigestValue (SHA-256) que sella el contenido del e-CF antes de su transmisión a la DGII. Si se altera un solo centavo, el hash queda invalidado.
+      </p>
+    </div>
+
+    {# Tarjeta 2: Recepción y Acuse DGII #}
+    <div class="normative-card">
+      <div class="normative-header">
+        <svg class="normative-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+        </svg>
+        <span>Recepción y Acuse DGII</span>
+      </div>
+      <p class="normative-desc">
+        El servicio de recepción oficial emite un TrackId asíncrono y responde con el código reglamentario de aprobación o los errores de validación de reglas de negocio.
+      </p>
+    </div>
+
+    {# Tarjeta 3: Cadena de No Repudio #}
+    <div class="normative-card">
+      <div class="normative-header">
+        <svg class="normative-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+        </svg>
+        <span>Cadena de No Repudio</span>
+      </div>
+      <p class="normative-desc">
+        Conforme a la Ley 32-23 de Facturación Electrónica, el emisor no puede repudiar la emisión de un e-CF firmado y timbrado. Este log funge como prueba pericial fiscal.
+      </p>
+    </div>
+  </section>
+
+</div>
+
+{# Cajón Lateral de Inspección Criptográfica (Drawer) #}
+<div class="drawer-backdrop" id="drawer-backdrop"></div>
+<aside class="inspect-drawer" id="inspect-drawer" aria-label="Detalle técnico de auditoría" role="dialog" aria-modal="true">
+  <div class="drawer-header">
+    <div class="drawer-title-group">
+      <span class="drawer-tag" id="drawer-event-id">EVT-00000</span>
+      <h2 class="drawer-title" id="drawer-event-title">Inspección de Evento</h2>
+    </div>
+    <button type="button" class="drawer-close-btn" id="drawer-close-btn" aria-label="Cerrar inspección">&times;</button>
+  </div>
+
+  <div class="drawer-body">
+    {# Estado y Timestamp #}
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+      <span class="status-pill status-correcto" id="drawer-status-pill">Correcto</span>
+      <span style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--color-muted);" id="drawer-timestamp">--/--/---- --:--:--</span>
+    </div>
+
+    {# Metadatos Clave #}
+    <div>
+      <div class="drawer-section-heading">PARÁMETROS DE LA PETICIÓN / ORIGEN</div>
+      <div class="drawer-meta-grid">
+        <div class="drawer-meta-item">
+          <span class="drawer-meta-lbl">USUARIO / PROCESO</span>
+          <span class="drawer-meta-val" id="drawer-user">--</span>
+        </div>
+        <div class="drawer-meta-item">
+          <span class="drawer-meta-lbl">MÓDULO DE SISTEMA</span>
+          <span class="drawer-meta-val" id="drawer-module">--</span>
+        </div>
+        <div class="drawer-meta-item">
+          <span class="drawer-meta-lbl">REFERENCIA TÉCNICA</span>
+          <span class="drawer-meta-val" id="drawer-ref">--</span>
+        </div>
+        <div class="drawer-meta-item">
+          <span class="drawer-meta-lbl">DIRECCIÓN IP EMISORA</span>
+          <span class="drawer-meta-val" id="drawer-ip">--</span>
+        </div>
+      </div>
+    </div>
+
+    {# Firma Criptográfica SHA-256 #}
+    <div>
+      <div class="drawer-section-heading">INTEGRIDAD CRIPTOGRÁFICA (SHA-256)</div>
+      <div class="drawer-crypto-box">
+        <div class="hash-line">
+          <code class="hash-value" id="drawer-hash">----------------------------------------------------------------</code>
+          <button type="button" class="btn-copy" data-copy-target="drawer-hash" title="Copiar Hash">
+            <svg class="icon icon-xs" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+            </svg>
+            <span>Copiar</span>
+          </button>
+        </div>
+        <small style="color: var(--color-muted); font-size: 0.6875rem;">
+          Firma algorítmica encadenada con certificación PKCS#1 v1.5 / RSA-SHA256 autorizada por la DGII.
+        </small>
+      </div>
+    </div>
+
+    {# Payload JSON Técnico #}
+    <div>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-2);">
+        <span class="drawer-section-heading" style="margin-bottom: 0;">PAYLOAD TÉCNICO Y ENVELOPE SOAP/JSON</span>
+        <button type="button" class="btn-copy" data-copy-target="drawer-json" title="Copiar JSON completo" style="padding: 0.2rem 0.45rem; font-size: 0.6875rem;">
+          <span>Copiar payload</span>
+        </button>
+      </div>
+      <pre class="drawer-json-box" id="drawer-json">{}</pre>
+    </div>
+  </div>
+
+  <div class="drawer-footer">
+    <a href="#" class="btn btn-primary btn-sm" id="drawer-full-link">
+      <span>Ver expediente forense completo</span>
+      <svg class="icon icon-xs" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+      </svg>
+    </a>
+  </div>
+</aside>
+{% endblock %}

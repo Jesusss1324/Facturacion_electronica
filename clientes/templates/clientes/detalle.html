@@ -1,0 +1,99 @@
+{% extends 'layouts/app.html' %}
+{% load static ui_format tz %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/pages/cliente-detalle.css' %}">{% endblock %}
+{% block extra_js %}<script src="{% static 'js/pages/cliente-detalle.js' %}" defer></script>{% endblock %}
+{% block page_header %}
+<a class="client-back" href="{% url 'clientes:listado' %}">← Volver a clientes</a>
+{% if not cliente.activo %}
+<div class="alert alert-info client-inactive-notice">
+  <div>
+    <strong>Cliente temporalmente inactivo</strong>
+    <p>Este contribuyente está deshabilitado para emitir nuevas facturas. Conserva la trazabilidad histórica de sus e-CF según la normativa fiscal.</p>
+  </div>
+  <button class="btn btn-primary" type="submit" form="client-state-form">{% include 'includes/icon.html' with name='reset' %} Reactivar cliente</button>
+</div>
+{% endif %}
+<header class="card client-profile">
+  <div>
+    <h1>{{ cliente.nombre }}</h1>
+    <p class="client-profile-meta">
+      <span class="badge {% if cliente.activo %}badge-success{% else %}badge-neutral{% endif %}">{% if cliente.activo %}✓ Activo para timbrado{% else %}● Inactivo{% endif %}</span>
+      <span>{{ cliente.tipo_identificacion }} {% if cliente.tipo_identificacion == 'RNC' %}Jurídico{% else %}Personal{% endif %}: <strong class="tabular-numbers">{{ cliente.identificacion_display }}</strong></span>
+      {% if cliente.fecha_registro %}<span>{% timezone 'America/Santo_Domingo' %}Registrado el {{ cliente.fecha_registro|date:'d/m/Y' }}{% endtimezone %}</span>{% endif %}
+      <span>e-CF Receptor Certificado</span>
+    </p>
+  </div>
+  <div class="page-actions">
+    {% if cliente.activo %}<button class="btn btn-secondary" type="submit" form="client-state-form">{% include 'includes/icon.html' with name='minus-circle' %} Inactivar</button>{% endif %}
+    <a class="btn btn-secondary" href="{% url 'clientes:editar' pk=cliente.id %}">{% include 'includes/icon.html' with name='edit' %} Editar datos</a>
+    {% if cliente.activo %}<a class="btn btn-primary" href="{% url 'comprobantes:nueva' %}?cliente={{ cliente.id }}">{% include 'includes/icon.html' with name='plus' %} Crear factura <span class="btn-badge">e-CF</span></a>{% else %}<button class="btn btn-primary" disabled title="Reactiva al cliente para crear una factura">{% include 'includes/icon.html' with name='plus' %} Crear factura <span class="btn-badge">e-CF</span></button>{% endif %}
+  </div>
+</header>
+{% endblock %}
+{% block content %}
+<section class="card client-information" aria-labelledby="client-info-title">
+  <header class="card-header">
+    <div class="client-section-heading">{% include 'includes/icon.html' with name='users' %}<div><h2 id="client-info-title">Información del Contribuyente</h2><p class="text-muted">Datos registrados ante la Dirección General de Impuestos Internos</p></div></div>
+    {% if tipos_ecf %}<span class="client-ecf-types">Habilitado e-CF: <strong>{{ tipos_ecf|join:', ' }}</strong></span>{% endif %}
+  </header>
+  <dl class="client-information-grid">
+    <div>
+      <dt>Tipo de identificación</dt>
+      <dd>{% include 'includes/icon.html' with name='invoices' %} {% if cliente.tipo_identificacion == 'RNC' %}RNC (Empresa / Persona Jurídica){% else %}Cédula (Persona Física / Consumidor){% endif %}</dd>
+    </div>
+    <div>
+      <dt>Número de {{ cliente.tipo_identificacion }}</dt>
+      <dd class="tabular-numbers"><strong>{{ cliente.identificacion_display }}</strong></dd>
+    </div>
+    <div>
+      <dt>{% if cliente.tipo_identificacion == 'RNC' %}Razón social registrada{% else %}Nombre completo del contribuyente{% endif %}</dt>
+      <dd>{{ cliente.nombre }}</dd>
+    </div>
+    <div>
+      <dt>Teléfono de contacto</dt>
+      <dd>{% if cliente.telefono %}{% include 'includes/icon.html' with name='user' %} {{ cliente.telefono }}{% else %}No registrado{% endif %}</dd>
+    </div>
+    <div>
+      <dt>Correo receptor de facturas electrónicas</dt>
+      <dd>{% if cliente.email %}{% include 'includes/icon.html' with name='user' %} {{ cliente.email }}{% else %}No registrado{% endif %}</dd>
+    </div>
+    <div>
+      <dt>Estado operativo en sistema</dt>
+      <dd>{% if cliente.activo %}<span class="text-success">● Activo y validado para emisión de comprobantes</span>{% else %}<span class="text-muted">● Deshabilitado para timbrado temporal</span>{% endif %}</dd>
+    </div>
+    <div class="client-address">
+      <dt>Dirección fiscal / comercial</dt>
+      <dd>{% if cliente.direccion %}{% include 'includes/icon.html' with name='user' %} {{ cliente.direccion }}{% else %}No registrada{% endif %}</dd>
+    </div>
+  </dl>
+  {% if cliente.fecha_registro %}
+  <footer class="client-info-footer">
+    {% timezone 'America/Santo_Domingo' %}
+    <span>{% include 'includes/icon.html' with name='clock' %} Fecha de alta en plataforma: <strong>{{ cliente.fecha_registro|date:'d/m/Y h:i A' }}</strong></span>
+    {% endtimezone %}
+  </footer>
+  {% endif %}
+</section>
+<section class="card client-invoices" aria-labelledby="client-invoices-title">
+  <header class="card-header">
+    <div><h2 id="client-invoices-title">Facturas Recientes</h2><p class="text-muted">Últimos comprobantes fiscales electrónicos (e-CF) emitidos hacia este contribuyente</p></div>
+    <a class="link-with-icon" href="{% url 'comprobantes:historial' %}?cliente={{ cliente.id }}">Ver todas las facturas de este cliente {% include 'includes/icon.html' with name='arrow-right' %}</a>
+  </header>
+  {% if facturas %}
+  <div class="table-container" role="region" aria-label="Facturas recientes del cliente" tabindex="0">
+    <table class="data-table client-invoice-table"><caption class="sr-only">Hasta tres facturas recientes de {{ cliente.nombre }}</caption><thead><tr><th scope="col">e-NCF</th><th scope="col">Tipo comprobante</th><th scope="col">Fecha emisión</th><th scope="col" class="text-right">Total facturado</th><th scope="col">Estado DGII</th><th scope="col" class="text-right">Acciones</th></tr></thead>
+      <tbody>{% timezone 'America/Santo_Domingo' %}{% for factura in facturas %}<tr><td class="tabular-numbers"><strong>{{ factura.e_ncf }}</strong></td><td><strong>E{{ factura.tipo_ecf }} · {{ factura.tipo_display }}</strong><br><span class="text-muted text-xs">{% if factura.tipo_ecf == '31' %}Uso fiscal / ITBIS adelantable{% else %}Consumidor final registrado{% endif %}</span></td><td><time datetime="{{ factura.fecha_emision|date:'c' }}">{{ factura.fecha_emision|date:'d/m/Y, h:i A' }}</time></td><td class="text-right tabular-numbers">{{ factura.monto_total|moneda_rd }}</td><td><span class="badge {% if factura.estado == 'aprobado' %}badge-success{% else %}badge-danger{% endif %}">{% if factura.estado == 'aprobado' %}✓ Aceptado DGII{% else %}✗ Rechazado DGII{% endif %}</span></td><td class="text-right"><a href="{% url 'comprobantes:detalle' pk=factura.id %}" class="link-with-icon" aria-label="Ver detalle de {{ factura.e_ncf }}">Ver detalle {% include 'includes/icon.html' with name='arrow-right' %}</a></td></tr>{% endfor %}{% endtimezone %}</tbody>
+    </table>
+  </div>
+  {% else %}<div class="empty-state"><span class="empty-state-icon">{% include 'includes/icon.html' with name='invoices' %}</span><h3>Este cliente todavía no tiene facturas registradas</h3><p class="text-muted">{% if cliente.activo %}Emita el primer Comprobante Fiscal Electrónico (e-CF) para este contribuyente con firma digital XML y cálculo tributario automático.{% else %}Reactiva al cliente para crear su primera factura.{% endif %}</p>{% if cliente.activo %}<a class="btn btn-primary" href="{% url 'comprobantes:nueva' %}?cliente={{ cliente.id }}">{% include 'includes/icon.html' with name='plus' %} Crear primera factura</a>{% endif %}</div>{% endif %}
+</section>
+<form id="client-state-form" method="post" action="{% url 'clientes:cambiar_estado' pk=cliente.id %}">{% csrf_token %}<input type="hidden" name="activo" value="{% if cliente.activo %}0{% else %}1{% endif %}"><input type="hidden" name="volver" value="detalle"></form>
+<dialog class="dialog client-state-dialog" aria-labelledby="state-title" aria-describedby="state-description">
+  <span class="empty-state-icon">{% if cliente.activo %}{% include 'includes/icon.html' with name='alert' %}{% else %}{% include 'includes/icon.html' with name='check-circle' %}{% endif %}</span>
+  <h2 id="state-title">¿{% if cliente.activo %}Inactivar{% else %}Reactivar{% endif %} este cliente?</h2>
+  <p class="client-state-subtitle">{% if cliente.activo %}Acción preventiva de seguridad fiscal{% else %}Restaurar acceso a emisión de comprobantes{% endif %}</p>
+  <p id="state-description">{% if cliente.activo %}El cliente <strong>{{ cliente.nombre }}</strong> ya no aparecerá sugerido al emitir nuevos comprobantes fiscales.{% else %}<strong>{{ cliente.nombre }}</strong> volverá a estar disponible para crear nuevas facturas.{% endif %}</p>
+  {% if cliente.activo %}<p class="client-state-note"><strong>Nota de auditoría:</strong> Sus facturas pasadas y trazabilidad electrónica no se borrarán ni alterarán. Podrás reactivarlo en cualquier momento.</p>{% endif %}
+  <div class="form-actions"><button class="btn btn-secondary" type="button" data-state-cancel>Cancelar</button><button class="btn {% if cliente.activo %}btn-danger{% else %}btn-primary{% endif %}" type="button" data-state-confirm>{% if cliente.activo %}Inactivar{% else %}Reactivar{% endif %} cliente</button></div>
+</dialog>
+{% endblock %}

@@ -1,0 +1,13 @@
+<nav class="breadcrumbs" aria-label="Ruta de navegación">
+  <ol>
+    {% if active_section != 'inicio' %}
+    <li><a href="{% url 'core:inicio' %}">Inicio</a></li>
+    {% endif %}
+    {% if screen.parent_url_name %}
+    <li><a href="{% url screen.parent_url_name %}">{{ screen.parent_label }}</a></li>
+    {% elif active_section == 'emision' %}
+    <li><a href="{% url 'comprobantes:nueva' %}">Nueva factura</a></li>
+    {% endif %}
+    <li aria-current="page">{{ screen.title }}</li>
+  </ol>
+</nav>

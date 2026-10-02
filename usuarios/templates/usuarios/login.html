@@ -1,0 +1,115 @@
+{% extends 'layouts/public.html' %}
+{% load static %}
+{% block title %}Iniciar sesión{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/pages/login.css' %}">{% endblock %}
+{% block extra_js %}<script src="{% static 'js/pages/login.js' %}" defer></script>{% endblock %}
+{% block public_shell_class %}login-shell{% endblock %}
+{% block public_content_class %}login-content{% endblock %}
+{% block public_brand %}{% endblock %}
+
+{% block content %}
+<div class="login-grid">
+  <section class="login-introduction" aria-labelledby="product-title">
+    <div class="login-brand">
+      <span class="brand-mark">{% include 'includes/icon.html' with name='invoices' %}</span>
+      <div>
+        <p class="eyebrow">Comprobantes electrónicos e-CF</p>
+        <p class="login-country">República Dominicana</p>
+      </div>
+    </div>
+    <div class="login-heading">
+      <h1 id="product-title">Facturación Electrónica</h1>
+      <p>Gestiona tus comprobantes con claridad, seguridad y trazabilidad, en un solo lugar.</p>
+    </div>
+    <ul class="login-features">
+      <li class="login-feature">
+        <span class="login-feature-icon">{% include 'includes/icon.html' with name='invoices' %}</span>
+        <div>
+          <h2>Comprobantes fiscales electrónicos</h2>
+          <p>E31 de crédito fiscal y E32 de consumo, organizados en una misma plataforma.</p>
+        </div>
+      </li>
+      <li class="login-feature">
+        <span class="login-feature-icon">{% include 'includes/icon.html' with name='shield' %}</span>
+        <div>
+          <h2>Control en cada etapa</h2>
+          <p>Información del cliente, detalle de la operación y revisión antes de emitir.</p>
+        </div>
+      </li>
+      <li class="login-feature">
+        <span class="login-feature-icon">{% include 'includes/icon.html' with name='activity' %}</span>
+        <div>
+          <h2>Historial y trazabilidad</h2>
+          <p>Consulta de documentos y seguimiento de los eventos de cada comprobante.</p>
+        </div>
+      </li>
+    </ul>
+  </section>
+
+  <section class="card login-card" aria-labelledby="login-title">
+    <header class="login-card-header">
+      <h2 id="login-title">Iniciar sesión</h2>
+      <p class="text-muted">Accede a tu cuenta para continuar.</p>
+    </header>
+
+    {% if form.non_field_errors %}
+    <div class="alert alert-danger login-alert" id="login-error" role="alert" tabindex="-1" data-login-error>
+      {% include 'includes/icon.html' with name='alert' %}
+      <div>{% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}</div>
+    </div>
+    {% endif %}
+
+    <form class="login-form" action="{% url 'usuarios:login' %}" method="post" novalidate data-login-form>
+      {% csrf_token %}
+      <input type="hidden" name="next" value="{{ next }}">
+      <div class="form-field">
+        <label for="{{ form.username.id_for_label }}">Usuario</label>
+        <div class="input-with-icon">
+          <span class="input-leading-icon">{% include 'includes/icon.html' with name='user' %}</span>
+          {{ form.username }}
+        </div>
+        {% if form.username.errors %}
+        <div class="field-error" id="{{ form.username.auto_id }}_error">
+          {% for error in form.username.errors %}<p>{{ error }}</p>{% endfor %}
+        </div>
+        {% endif %}
+      </div>
+
+      <div class="form-field">
+        <label for="{{ form.password.id_for_label }}">Contraseña</label>
+        <div class="input-with-icon input-with-action">
+          <span class="input-leading-icon">{% include 'includes/icon.html' with name='lock' %}</span>
+          {{ form.password }}
+          <button class="password-toggle" type="button" aria-label="Mostrar contraseña" aria-controls="{{ form.password.id_for_label }}" aria-pressed="false" data-password-toggle hidden>
+            <span data-password-show-icon>{% include 'includes/icon.html' with name='eye' %}</span>
+            <span data-password-hide-icon hidden>{% include 'includes/icon.html' with name='eye-off' %}</span>
+          </button>
+        </div>
+        {% if form.password.errors %}
+        <div class="field-error" id="{{ form.password.auto_id }}_error">
+          {% for error in form.password.errors %}<p>{{ error }}</p>{% endfor %}
+        </div>
+        {% endif %}
+      </div>
+
+      <button class="btn btn-primary login-submit" type="submit" data-login-submit>
+        <span data-submit-label>Iniciar sesión</span>
+        <span class="login-spinner" aria-hidden="true" data-submit-spinner hidden></span>
+        <span data-submit-arrow>{% include 'includes/icon.html' with name='arrow-right' %}</span>
+      </button>
+      <span class="sr-only" role="status" aria-live="polite" data-login-status></span>
+    </form>
+
+    <p class="login-security-note">
+      {% include 'includes/icon.html' with name='lock' %}
+      <span>Acceso exclusivo para usuarios autorizados.</span>
+    </p>
+  </section>
+</div>
+{% endblock %}
+
+{% block public_footer %}
+<footer class="login-footer">
+  <p>Facturación Electrónica <span aria-hidden="true">·</span> Gestión de comprobantes e-CF <span aria-hidden="true">·</span> República Dominicana</p>
+</footer>
+{% endblock %}

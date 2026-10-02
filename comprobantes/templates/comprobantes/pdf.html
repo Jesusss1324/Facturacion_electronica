@@ -1,0 +1,321 @@
+{% extends 'layouts/app.html' %}
+{% load static ui_format %}
+
+{% block extra_css %}
+  <link rel="stylesheet" href="{% static 'css/pages/comprobante-pdf.css' %}">
+{% endblock %}
+
+{% block extra_js %}
+  <script src="{% static 'js/pages/comprobante-pdf.js' %}" defer></script>
+{% endblock %}
+
+{% block content %}
+<div class="pdf-page-container">
+
+  {# ENCABEZADO SUPERIOR DEL DOCUMENTO #}
+  <header class="pdf-top-header">
+    <div class="header-titles">
+      <div class="title-with-badge">
+        <h1 class="pdf-main-heading">Representación Impresa PDF</h1>
+        <span class="badge-encf code-font">{{ factura.e_ncf }}</span>
+        <span class="badge-type-desc text-muted">E{{ factura.tipo_ecf }} · Factura de {{ factura.tipo_display }} Electrónica (Ley 32-23)</span>
+      </div>
+      <div class="status-indicator">
+        {% if es_aprobado %}
+          <span class="badge badge-success-subtle">✔ Aprobado DGII</span>
+        {% elif es_rechazado %}
+          <span class="badge badge-danger-subtle">⊗ Rechazado DGII</span>
+        {% elif es_anulado %}
+          <span class="badge badge-warning-subtle">⊘ Anulado</span>
+        {% else %}
+          <span class="badge badge-primary-subtle">{{ factura.estado_display }}</span>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="header-actions">
+      <a href="{% url 'comprobantes:xml' pk=factura.id %}" class="btn btn-outline btn-sm">
+        &lt;&gt; Ver XML
+      </a>
+      <button type="button" class="btn btn-outline btn-sm" id="btn-pdf-print">
+        <svg class="icon icon-xs" aria-hidden="true" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+        </svg>
+        <span>Imprimir</span>
+      </button>
+      <button type="button" class="btn btn-primary btn-sm btn-download-pdf-doc" id="btn-pdf-download">
+        <svg class="icon icon-xs" aria-hidden="true" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+        </svg>
+        <span>Descargar PDF (68.4 KB)</span>
+      </button>
+    </div>
+  </header>
+
+  {# PESTAÑAS DE VAVEGACIÓN DE FORMATO #}
+  <nav class="pdf-format-tabs" aria-label="Formatos del comprobante">
+    <a href="{% url 'comprobantes:detalle' pk=factura.id %}" class="format-tab">
+      <svg class="icon icon-xs" aria-hidden="true" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+      </svg>
+      <span>Detalle de factura</span>
+    </a>
+    <a href="{% url 'comprobantes:xml' pk=factura.id %}" class="format-tab">
+      <span>&lt;&gt; Documento XML e-CF</span>
+    </a>
+    <span class="format-tab is-active" aria-current="page">
+      <svg class="icon icon-xs" aria-hidden="true" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+      </svg>
+      <span>Representación impresa PDF (Activa)</span>
+    </span>
+  </nav>
+
+  {# MESA DE TRABAJO DEL VISOR PDF (CANVAS TIPO ACROBAT / CHROME PDF) #}
+  <div class="pdf-viewer-workbench" id="pdf-workbench">
+    
+    {# BARRA DE HERRAMIENTAS FLOTANTE DEL VISOR PDF #}
+    <div class="pdf-toolbar" role="toolbar" aria-label="Herramientas del visor PDF">
+      <div class="toolbar-section">
+        <button type="button" class="toolbar-btn" id="btn-prev-page" title="Página anterior" disabled>&larr;</button>
+        <span class="toolbar-text">Pág. 1 de 1</span>
+        <button type="button" class="toolbar-btn" id="btn-next-page" title="Página siguiente" disabled>&rarr;</button>
+      </div>
+
+      <div class="toolbar-separator" aria-hidden="true"></div>
+
+      <div class="toolbar-section">
+        <button type="button" class="toolbar-btn" id="btn-zoom-out" title="Reducir zoom">−</button>
+        <span class="toolbar-text code-font" id="zoom-value">100%</span>
+        <button type="button" class="toolbar-btn" id="btn-zoom-in" title="Aumentar zoom">+</button>
+        <button type="button" class="toolbar-pill-btn" id="btn-fit-width">Ajustar ancho</button>
+        <button type="button" class="toolbar-pill-btn" id="btn-fit-page">Ajustar página</button>
+      </div>
+
+      <div class="toolbar-separator" aria-hidden="true"></div>
+
+      <div class="toolbar-section toolbar-options">
+        <label class="toolbar-checkbox-label">
+          <input type="checkbox" id="chk-grid-dpi" />
+          <span>Regla 300 DPI</span>
+        </label>
+        <label class="toolbar-checkbox-label">
+          <input type="checkbox" id="chk-margins-iso" checked />
+          <span>Márgenes ISO</span>
+        </label>
+      </div>
+    </div>
+
+    {# HOJA FÍSICA DE PAPEL / REPRESENTACIÓN IMPRESA DGII #}
+    <div class="paper-viewport" id="paper-viewport">
+      <div class="paper-sheet" id="paper-sheet">
+        
+        {# ENCABEZADO FISCAL OFICIAL #}
+        <div class="paper-tax-notice">
+          <span>COMPROBANTE FISCAL ELECTRÓNICO (e-CF) — LEY 32-23 RD</span>
+        </div>
+
+        {# CABECERA: EMISOR (IZQ) vs CAJA OFICIAL DGII (DER) #}
+        <header class="paper-header">
+          <div class="paper-emisor">
+            <div class="emisor-logo-block">
+              <span class="emisor-logo-box">STC</span>
+              <div>
+                <strong class="paper-emisor-name">{{ emisor.razon_social }}</strong>
+              </div>
+            </div>
+            <p class="paper-emisor-meta">
+              RNC Emisor: <strong>{{ emisor.rnc }}</strong> · Sucursal: {{ emisor.sucursal }}
+            </p>
+            <p class="paper-emisor-address">
+              {{ emisor.direccion }}<br>
+              {{ emisor.municipio }}, {{ emisor.provincia }}
+            </p>
+            <p class="paper-emisor-contact">
+              Tel: {{ emisor.telefono }} · Correo: {{ emisor.email }}
+            </p>
+          </div>
+
+          <div class="paper-dgii-box">
+            <div class="dgii-box-republic">REPÚBLICA DOMINICANA</div>
+            <div class="dgii-box-doc-title">FACTURA DE {{ factura.tipo_display|upper }} ELECTRÓNICA</div>
+            <div class="dgii-box-type-sub">Tipo {{ factura.tipo_ecf }} · Comprobante Fiscal</div>
+
+            <div class="paper-encf-highlight">
+              <span class="highlight-label">NÚMERO e-NCF</span>
+              <strong class="highlight-encf code-font">{{ factura.e_ncf }}</strong>
+            </div>
+
+            <div class="paper-dgii-meta">
+              <div class="meta-row">
+                <span>Emisión:</span>
+                <strong>{{ fecha_corta }}</strong>
+              </div>
+              <div class="meta-row">
+                <span>Vencimiento:</span>
+                <strong>{{ vencimiento_secuencia }}</strong>
+              </div>
+              <div class="meta-row">
+                <span>TrackId DGII:</span>
+                <strong class="code-font">{{ track_id }}</strong>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        {# DATOS DEL RECEPTOR #}
+        <section class="paper-receptor">
+          <div class="receptor-header-bar">
+            <span class="bar-title">DATOS DEL RECEPTOR</span>
+            <span class="bar-badge">RNC VALIDADO ✔</span>
+          </div>
+
+          <div class="receptor-grid">
+            <div class="receptor-info-left">
+              <span class="rec-label">Razón Social:</span>
+              <strong class="rec-value">{{ cliente.nombre }}</strong>
+              <p class="rec-address">{{ cliente.direccion }}, Santo Domingo, D.N.</p>
+            </div>
+            <div class="receptor-info-right">
+              <div class="rec-item">
+                <span class="rec-item-lbl">RNC Receptor:</span>
+                <strong class="code-font">{{ cliente.identificacion_display }}</strong>
+              </div>
+              <div class="rec-item">
+                <span class="rec-item-lbl">Condición:</span>
+                <span>{{ factura.condicion_pago_display }} DOP</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {# TABLA FORMAL DE FACTURACIÓN #}
+        <table class="paper-table">
+          <thead>
+            <tr>
+              <th class="p-th-num">#</th>
+              <th class="p-th-desc">DESCRIPCIÓN DEL BIEN O SERVICIO</th>
+              <th class="p-th-cant">CANT.</th>
+              <th class="p-th-precio">PRECIO UNIT.</th>
+              <th class="p-th-itbis">ITBIS (18%)</th>
+              <th class="p-th-total">MONTO TOTAL</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in items %}
+              <tr>
+                <td class="p-td-num">{{ item.numero }}</td>
+                <td class="p-td-desc">
+                  <strong>{{ item.concepto }}</strong>
+                  {% if item.descripcion %}
+                    <span class="p-subdesc text-muted">{{ item.descripcion }}</span>
+                  {% endif %}
+                </td>
+                <td class="p-td-cant code-font">{{ item.cantidad|numero_decimal }}</td>
+                <td class="p-td-precio code-font">{{ item.precio|moneda_rd }}</td>
+                <td class="p-td-itbis code-font">{{ item.itbis_liq|moneda_rd }}</td>
+                <td class="p-td-total code-font"><strong>{{ item.total_neto|moneda_rd }}</strong></td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+
+        {# BLOQUE INFERIOR: QR FISCAL + TOTALES #}
+        <footer class="paper-footer">
+          <div class="paper-footer-left">
+            <div class="paper-qr-box">
+              <div class="qr-svg-holder">
+                <svg width="80" height="80" viewBox="0 0 84 84" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                  <rect width="84" height="84" fill="#ffffff" />
+                  <rect x="4" y="4" width="24" height="24" fill="#000000" />
+                  <rect x="7" y="7" width="18" height="18" fill="#ffffff" />
+                  <rect x="10" y="10" width="12" height="12" fill="#000000" />
+                  <rect x="56" y="4" width="24" height="24" fill="#000000" />
+                  <rect x="59" y="7" width="18" height="18" fill="#ffffff" />
+                  <rect x="62" y="10" width="12" height="12" fill="#000000" />
+                  <rect x="4" y="56" width="24" height="24" fill="#000000" />
+                  <rect x="7" y="59" width="18" height="18" fill="#ffffff" />
+                  <rect x="10" y="62" width="12" height="12" fill="#000000" />
+                  <rect x="32" y="6" width="6" height="6" fill="#000000" />
+                  <rect x="44" y="6" width="6" height="6" fill="#000000" />
+                  <rect x="36" y="16" width="6" height="6" fill="#000000" />
+                  <rect x="6" y="34" width="6" height="6" fill="#000000" />
+                  <rect x="16" y="34" width="6" height="6" fill="#000000" />
+                  <rect x="24" y="40" width="6" height="6" fill="#000000" />
+                  <rect x="34" y="30" width="8" height="8" fill="#000000" />
+                  <rect x="46" y="24" width="6" height="6" fill="#000000" />
+                  <rect x="44" y="36" width="8" height="8" fill="#000000" />
+                  <rect x="34" y="46" width="6" height="6" fill="#000000" />
+                  <rect x="58" y="34" width="6" height="6" fill="#000000" />
+                  <rect x="68" y="34" width="6" height="6" fill="#000000" />
+                  <rect x="64" y="44" width="6" height="6" fill="#000000" />
+                  <rect x="34" y="60" width="6" height="6" fill="#000000" />
+                  <rect x="44" y="66" width="6" height="6" fill="#000000" />
+                  <rect x="58" y="60" width="8" height="8" fill="#000000" />
+                  <rect x="70" y="68" width="6" height="6" fill="#000000" />
+                </svg>
+              </div>
+              <div class="qr-info">
+                <span class="qr-tag">CÓDIGO QR OFICIAL DGII</span>
+                <p class="qr-help">
+                  Escaneo fiscal para consulta inmediata en sede institucional DGII.
+                </p>
+                <span class="qr-security code-font">Firma XML-DSig RSA-SHA256</span>
+              </div>
+            </div>
+            <div class="paper-letras-block">
+              <span class="letras-tag">CANTIDAD EN LETRAS</span>
+              <p class="letras-str"><em>{{ cantidad_en_letras }}</em></p>
+            </div>
+          </div>
+
+          <div class="paper-footer-right">
+            <div class="paper-totals-table">
+              <div class="tot-row">
+                <span>Subtotal Gravado:</span>
+                <strong class="code-font">{{ subtotal_bruto|moneda_rd }}</strong>
+              </div>
+              <div class="tot-row">
+                <span>Descuento Comercial:</span>
+                <strong class="code-font {% if descuento_total > 0 %}text-danger{% else %}text-muted{% endif %}">
+                  {% if descuento_total > 0 %}- {{ descuento_total|moneda_rd }}{% else %}RD$ 0.00{% endif %}
+                </strong>
+              </div>
+              <div class="tot-row">
+                <span>Base Neta Gravada (18%):</span>
+                <strong class="code-font">{{ base_imponible|moneda_rd }}</strong>
+              </div>
+              <div class="tot-row">
+                <span>ITBIS Trasladado (18%):</span>
+                <strong class="code-font">{{ itbis_total|moneda_rd }}</strong>
+              </div>
+              <div class="tot-row">
+                <span>Importe Exento:</span>
+                <strong class="code-font text-muted">RD$ 0.00</strong>
+              </div>
+              <div class="tot-total-box">
+                <div class="tot-label">
+                  <strong>TOTAL FACTURA</strong>
+                  <span class="tot-curr">DOP</span>
+                </div>
+                <div class="tot-grand code-font">
+                  {{ monto_total|moneda_rd }}
+                </div>
+              </div>
+            </div>
+          </div>
+        </footer>
+
+        {# PIE DE PÁGINA LEGAL #}
+        <div class="paper-bottom-legal">
+          <span>Página 1 de 1 — Representación Gráfica e-CF según Ley No. 32-23 y Decreto 254-06</span>
+          <span>DGII RD · Certificación Fiscal Activa</span>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+</div>
+{% endblock %}

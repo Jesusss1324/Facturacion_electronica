@@ -1,0 +1,9 @@
+{% if messages %}
+<div class="message-list" aria-live="polite">
+  {% for message in messages %}
+  <div class="alert{% if message.level == 40 %} alert-danger{% elif message.level == 30 %} alert-warning{% elif message.level == 25 %} alert-success{% else %} alert-info{% endif %}"{% if message.level == 40 %} role="alert"{% else %} role="status"{% endif %}>
+    {{ message }}
+  </div>
+  {% endfor %}
+</div>
+{% endif %}

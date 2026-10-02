@@ -1,0 +1,9 @@
+{% extends 'layouts/public.html' %}
+{% block content %}
+<section class="card empty-state" aria-labelledby="error-title">
+  <p class="eyebrow">{% block error_code %}{% endblock %}</p>
+  <h1 id="error-title">{% block error_title %}{% endblock %}</h1>
+  <p class="text-muted">{% block error_description %}{% endblock %}</p>
+  <a class="btn btn-primary" href="{% url 'core:inicio' %}">Volver al inicio</a>
+</section>
+{% endblock %}

@@ -1,0 +1,277 @@
+{% extends 'layouts/app.html' %}
+{% load static ui_format tz %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/pages/cliente-edicion.css' %}">
+{% endblock %}
+{% block extra_js %}
+<script src="{% static 'js/pages/cliente-edicion.js' %}" defer></script>
+{% endblock %}
+{% block page_header %}
+<div class="edit-nav-bar">
+  <a class="client-back" href="{% url 'clientes:detalle' pk=cliente.id %}">← Volver al detalle del cliente</a>
+  <div class="edit-header-pills">
+    <span class="badge badge-neutral">e-CF v1.0.4 · Registro ID: CLI-{{ cliente.id|stringformat:"04d" }}</span>
+    <span class="badge badge-neutral" data-changes-status>● Sin cambios pendientes</span>
+  </div>
+</div>
+<header class="card client-edit-summary">
+  <div class="client-summary-identity">
+    <div class="client-summary-avatar">
+      {% include 'includes/icon.html' with name='invoices' %}
+    </div>
+    <div class="client-summary-details">
+      <div class="client-summary-eyebrow">
+        <span class="fiscal-reg-tag">REGISTRO FISCAL {% if cliente.activo %}ACTIVO{% else %}INACTIVO{% endif %}</span>
+        <span class="badge {% if cliente.activo %}badge-success{% else %}badge-neutral{% endif %}" data-summary-badge>
+          {% if cliente.activo %}✓ Activo para timbrado{% else %}● Inactivo{% endif %}
+        </span>
+      </div>
+      <h1>{{ cliente.nombre }}</h1>
+      <p class="client-summary-meta">
+        <span>{{ cliente.tipo_identificacion }}: <strong class="tabular-numbers">{{ cliente.identificacion_display }}</strong></span>
+        <span>·</span>
+        <span>{{ facturas_count }} e-CF emitido{{ facturas_count|pluralize }}</span>
+      </p>
+    </div>
+  </div>
+  <div class="padron-sync-box">
+    <span class="text-xs text-muted">Última validación padrón</span>
+    <strong class="padron-sync-status">
+      Hoy, 10:42 AM · HTTP 200
+      {% include 'includes/icon.html' with name='check-circle' %}
+    </strong>
+  </div>
+</header>
+{% endblock %}
+
+{% block content %}
+<div class="client-edit-wrapper">
+  {% if form.errors %}
+  <div class="alert alert-danger client-error-summary" role="alert" tabindex="-1" data-error-summary>
+    <strong>Revisa la información del cliente</strong>
+    <p>Corrige los campos señalados para continuar. Los datos ingresados se han conservado.</p>
+    {{ form.non_field_errors }}
+  </div>
+  {% endif %}
+
+  <form method="post" class="client-edit-form" novalidate data-client-edit-form data-initial-active="{% if cliente.activo %}1{% else %}0{% endif %}">
+    {% csrf_token %}
+
+    <!-- 01 Identificación Tributaria y Régimen e-CF -->
+    <fieldset class="card edit-section">
+      <header class="edit-section-header">
+        <div class="edit-section-title">
+          <span class="section-number">01</span>
+          <div>
+            <h2>Identificación Tributaria y Régimen e-CF</h2>
+            <p class="text-muted">Parámetros legales exigidos por la DGII para la validación automática de comprobantes.</p>
+          </div>
+        </div>
+        <span class="norm-badge">Norma 07-2018</span>
+      </header>
+
+      <div class="edit-section-body">
+        <div class="form-grid">
+          <div class="form-field">
+            <div class="field-header">
+              <span class="field-label" id="doc-type-label">Tipo de Documento Fiscal <span class="text-danger">*</span></span>
+              <span class="field-tag">Receptor</span>
+            </div>
+            <div class="document-options" role="radiogroup" aria-labelledby="doc-type-label">
+              {% for radio in form.tipo_identificacion %}
+              <label class="document-option">
+                {{ radio.tag }}
+                <span>
+                  <strong>
+                    {% if radio.data.value == 'RNC' %}
+                    {% include 'includes/icon.html' with name='invoices' %} RNC (Jurídico)
+                    {% else %}
+                    {% include 'includes/icon.html' with name='user' %} Cédula (Física)
+                    {% endif %}
+                  </strong>
+                </span>
+              </label>
+              {% endfor %}
+            </div>
+            <p class="field-hint">Determina el tipo de comprobante inicial habilitado (E31 vs E32).</p>
+            {% for error in form.tipo_identificacion.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+          </div>
+
+          <div class="form-field">
+            <div class="field-header">
+              <label for="{{ form.identificacion.id_for_label }}"><span data-doc-number-label>{{ form.identificacion.label }}</span> <span class="text-danger">*</span></label>
+              <button type="button" class="btn-link" data-revalidate-btn>{% include 'includes/icon.html' with name='search' %} Revalidar en Padrón</button>
+            </div>
+            <div class="input-with-badge">
+              {{ form.identificacion }}
+              <span class="input-badge text-success" data-valid-badge>✓ Válido</span>
+            </div>
+            <div id="identificacion-errors">{% for error in form.identificacion.errors %}<p class="field-error">{{ error }}</p>{% endfor %}</div>
+            <p class="field-hint" id="identificacion-help">Formato oficial con o sin guiones ({% if form.tipo_identificacion.value == 'CEDULA' %}11 dígitos para personas{% else %}9 dígitos para empresas{% endif %}).</p>
+            <p class="field-hint" data-format-status role="status"></p>
+          </div>
+        </div>
+
+        <div class="padron-callout">
+          <span class="padron-callout-icon">{% include 'includes/icon.html' with name='shield' %}</span>
+          <div class="padron-callout-content">
+            <div class="padron-callout-title">
+              <strong>Padrón Tributario Activo ante DGII</strong>
+              <span class="badge badge-info">Estado: NORMAL</span>
+            </div>
+            <p class="padron-callout-text">
+              Este contribuyente cuenta con <strong>{{ facturas_count }} factura{{ facturas_count|pluralize }} electrónica{{ facturas_count|pluralize }} asociada{{ facturas_count|pluralize }} ({{ tipos_ecf_display }})</strong>. Todo cambio en el RNC mantendrá la trazabilidad histórica de los comprobantes ya firmados criptográficamente.
+            </p>
+          </div>
+        </div>
+      </div>
+    </fieldset>
+
+    <!-- 02 Información General y Entrega e-CF -->
+    <fieldset class="card edit-section">
+      <header class="edit-section-header">
+        <div class="edit-section-title">
+          <span class="section-number">02</span>
+          <div>
+            <h2>Información General y Entrega e-CF</h2>
+            <p class="text-muted">Datos para la generación de la Representación Impresa (RI) y el envío del XML firmado.</p>
+          </div>
+        </div>
+      </header>
+
+      <div class="edit-section-body">
+        <div class="form-field full-width">
+          <div class="field-header">
+            <label for="{{ form.nombre.id_for_label }}"><span data-name-label>{{ form.nombre.label }}</span> <span class="text-danger">*</span></label>
+            <span class="field-tag text-muted">Tal como figura en el certificado RNC</span>
+          </div>
+          {{ form.nombre }}
+          <div id="nombre-errors">{% for error in form.nombre.errors %}<p class="field-error">{{ error }}</p>{% endfor %}</div>
+        </div>
+
+        <div class="form-grid">
+          <div class="form-field">
+            <div class="field-header">
+              <label for="{{ form.email.id_for_label }}">{{ form.email.label }}</label>
+              <span class="field-tag">Receptor XML</span>
+            </div>
+            <div class="input-with-icon">
+              <span class="input-icon" aria-hidden="true">@</span>
+              {{ form.email }}
+            </div>
+            <div id="email-errors">{% for error in form.email.errors %}<p class="field-error">{{ error }}</p>{% endfor %}</div>
+            <p class="field-hint">Recepción automatizada de acuses de recibo y archivo XML (.xml).</p>
+          </div>
+
+          <div class="form-field">
+            <div class="field-header">
+              <label for="{{ form.telefono.id_for_label }}">{{ form.telefono.label }}</label>
+              <span class="field-tag text-muted">Línea directa</span>
+            </div>
+            <div class="input-with-icon">
+              <span class="input-icon">{% include 'includes/icon.html' with name='user' %}</span>
+              {{ form.telefono }}
+            </div>
+            <div id="telefono-errors">{% for error in form.telefono.errors %}<p class="field-error">{{ error }}</p>{% endfor %}</div>
+            <p class="field-hint">Línea directa para notificaciones de cobranza y fiscalidad.</p>
+          </div>
+        </div>
+
+        <div class="form-field full-width">
+          <div class="field-header">
+            <label for="{{ form.direccion.id_for_label }}">{{ form.direccion.label }}</label>
+            <span class="field-tag text-muted">Impreso en el pie del comprobante</span>
+          </div>
+          {{ form.direccion }}
+          <div id="direccion-errors">{% for error in form.direccion.errors %}<p class="field-error">{{ error }}</p>{% endfor %}</div>
+        </div>
+      </div>
+    </fieldset>
+
+    <!-- 03 Estado Operativo en el Sistema -->
+    <fieldset class="card edit-section">
+      <header class="edit-section-header">
+        <div class="edit-section-title">
+          <span class="section-number">03</span>
+          <div>
+            <h2>Estado Operativo en el Sistema</h2>
+            <p class="text-muted">Control de habilitación para nueva emisión de comprobantes fiscales.</p>
+          </div>
+        </div>
+      </header>
+
+      <div class="edit-section-body">
+        <div class="status-options" role="radiogroup" aria-label="Estado operativo">
+          <label class="status-option status-active" data-status-card="1">
+            <input type="radio" name="activo" value="1" {% if form.activo.value == '1' or form.activo.value == True %}checked{% endif %}>
+            <div class="status-option-content">
+              <div class="status-option-header">
+                <strong>{% include 'includes/icon.html' with name='check-circle' %} Cliente Activo</strong>
+                <span class="badge badge-success">Habilitado</span>
+              </div>
+              <p>Permite la emisión de comprobantes fiscales electrónicos (E31, E32, E33, E34, E44, E45) con cálculo automático de ITBIS.</p>
+            </div>
+          </label>
+
+          <label class="status-option status-inactive" data-status-card="0">
+            <input type="radio" name="activo" value="0" {% if form.activo.value == '0' or form.activo.value == False %}checked{% endif %}>
+            <div class="status-option-content">
+              <div class="status-option-header">
+                <strong>{% include 'includes/icon.html' with name='minus-circle' %} Cliente Inactivo</strong>
+                <span class="badge badge-neutral">Deshabilitado</span>
+              </div>
+              <p>Bloquea la selección de este receptor para emitir nuevas facturas. Conserva íntegramente todo el historial y auditoría fiscal.</p>
+            </div>
+          </label>
+        </div>
+
+        <div class="status-banner banner-active alert alert-success" data-banner-active>
+          <div class="status-banner-content">
+            <strong>{% include 'includes/icon.html' with name='check-circle' %} Emisión Fiscal Inmediata Permitida</strong>
+            <p>El cliente está plenamente habilitado en el catálogo. Al facturar, sus datos se insertarán automáticamente en los encabezados del XML e-CF sin restricciones tributarias.</p>
+          </div>
+        </div>
+
+        <div class="status-banner banner-inactive alert alert-warning" data-banner-inactive hidden>
+          <div class="status-banner-content">
+            <strong>{% include 'includes/icon.html' with name='alert' %} Cliente en Proceso de Deshabilitación</strong>
+            <p>Al inactivar este cliente no podrá seleccionarse para nuevas facturas. Sus comprobantes previos permanecerán inalterados en el historial fiscal.</p>
+          </div>
+        </div>
+      </div>
+    </fieldset>
+
+    <!-- Footer -->
+    <footer class="client-edit-footer">
+      <div class="footer-meta">
+        {% include 'includes/icon.html' with name='clock' %}
+        <span>Última modificación: {% if cliente.fecha_modificacion %}{% timezone 'America/Santo_Domingo' %}{{ cliente.fecha_modificacion|date:'d \d\e F, Y' }}{% endtimezone %}{% else %}{% timezone 'America/Santo_Domingo' %}{{ cliente.fecha_registro|date:'d \d\e F, Y'|default:'15 de Enero, 2026' }}{% endtimezone %}{% endif %} por {{ user.get_full_name|default:user.username }}</span>
+      </div>
+      <div class="form-actions">
+        <a class="btn btn-secondary" href="{% url 'clientes:detalle' pk=cliente.id %}">Cancelar</a>
+        <button class="btn btn-primary" type="submit" data-save-btn>
+          {% include 'includes/icon.html' with name='check-circle' %} <span>Guardar cambios</span>
+        </button>
+      </div>
+    </footer>
+  </form>
+</div>
+
+<!-- Confirmation Dialog for Inactivating client -->
+<dialog class="dialog client-inactivate-dialog" data-inactivate-dialog aria-labelledby="inactivate-dialog-title">
+  <span class="empty-state-icon text-danger">{% include 'includes/icon.html' with name='alert' %}</span>
+  <h2 id="inactivate-dialog-title">¿Inactivar este cliente?</h2>
+  <p class="dialog-subtitle tabular-numbers">RNC: {{ cliente.identificacion_display }}</p>
+  <p>El cliente <strong>{{ cliente.nombre }}</strong> ya no estará disponible en el catálogo de emisión para nuevas facturas electrónicas (e-CF).</p>
+  <div class="dialog-callout">
+    {% include 'includes/icon.html' with name='invoices' %}
+    <span>Sus comprobantes previos ({{ tipos_ecf_display }}) y registros contables permanecerán intactos para fines de auditoría.</span>
+  </div>
+  <div class="form-actions">
+    <button class="btn btn-secondary" type="button" data-dialog-cancel>Cancelar</button>
+    <button class="btn btn-danger" type="button" data-dialog-confirm>
+      {% include 'includes/icon.html' with name='minus-circle' %} Inactivar y Guardar
+    </button>
+  </div>
+</dialog>
+{% endblock %}

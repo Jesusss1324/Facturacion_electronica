@@ -1,0 +1,44 @@
+{% extends 'layouts/app.html' %}
+{% load static ui_format %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/pages/comprobante-items.css' %}">{% endblock %}
+{% block extra_js %}<script src="{% static 'js/pages/comprobante-items.js' %}" defer></script>{% endblock %}
+{% block messages %}{% endblock %}
+{% block page_header %}<header class="items-page-header"><div><p class="eyebrow">Nueva factura · Paso 4 de 6</p><h1>Bienes y servicios</h1><p class="text-muted">Agrega los conceptos de tu factura y revisa sus importes al instante.</p></div><span class="badge badge-info">E{{ borrador.tipo_ecf }} · {{ borrador.tipo_display }}</span></header>{% endblock %}
+{% block before_content %}{% include 'includes/invoice_steps.html' %}{% endblock %}
+{% block content %}
+<div data-items-workspace>
+  {% include 'includes/messages.html' %}
+  {% if error %}<div class="alert alert-danger items-notice" role="alert">{{ error }}</div>{% endif %}
+  <div class="alert alert-danger items-notice" data-request-error role="alert" hidden>No se pudo completar la solicitud. Tus cambios siguen en el formulario. Intenta de nuevo o recarga la página si el borrador cambió.</div>
+  <div class="items-studio">
+    <section class="items-editor-column" aria-label="Conceptos de la factura">
+      <div class="card items-client-context"><span class="items-context-icon">{% include 'includes/icon.html' with name='users' %}</span><div><strong>{{ cliente.nombre }}</strong><p>{{ cliente.tipo_identificacion }}: {{ cliente.identificacion_display }} <span class="badge badge-success">Activo</span></p></div><a href="{% url 'comprobantes:cliente' borrador_id=borrador.id %}" class="link-with-icon">Cambiar</a></div>
+      <div class="items-section-title"><div><h2 tabindex="-1">Conceptos <span class="badge badge-info">{{ borrador.lineas|length }}</span></h2><p class="text-muted">Precios sin impuestos · ITBIS 18%</p></div><a href="?nuevo=1" class="btn btn-primary" data-workspace-link>{% include 'includes/icon.html' with name='plus' %} Agregar ítem</a></div>
+      {% if editor_open %}
+      <section class="card item-editor" aria-labelledby="item-editor-title">
+        <header><h3 id="item-editor-title">{% if editing %}Editar concepto{% else %}Nuevo concepto{% endif %}</h3><a href="{{ request.path }}" class="btn btn-icon" aria-label="Cerrar formulario" data-workspace-link>×</a></header>
+        <form method="post" action="{{ request.path }}" novalidate data-item-form>
+          {% csrf_token %}<input type="hidden" name="accion" value="guardar"><input type="hidden" name="revision" value="{{ borrador.revision_lineas }}">{% if editing %}<input type="hidden" name="linea_id" value="{{ editing.id }}">{% endif %}
+          {% if form.errors %}<div class="alert alert-danger items-form-errors" tabindex="-1" role="alert" data-form-errors><strong>Revisa los campos señalados.</strong>{{ form.non_field_errors }}</div>{% endif %}
+          <fieldset class="items-type-choice"><legend class="sr-only">Tipo de concepto</legend>{% for radio in form.tipo %}<label>{{ radio.tag }}<span>{{ radio.choice_label }}</span></label>{% endfor %}</fieldset>
+          <div id="tipo-errors" class="field-error">{{ form.tipo.errors }}</div>
+          <div class="item-fields">{% for field in form %}{% if field.name != 'tipo' %}<div class="form-field {% if field.name == 'concepto' or field.name == 'descripcion' %}item-field-wide{% endif %}"><label for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %} <span class="text-danger">*</span>{% else %} <span class="text-muted">(opcional)</span>{% endif %}</label>{{ field }}<div id="{{ field.name }}-errors">{% for error in field.errors %}<p class="field-error">{{ error }}</p>{% endfor %}</div></div>{% endif %}{% endfor %}</div>
+          <p class="field-hint item-tax-note">El descuento se aplica al importe de la línea antes de calcular el ITBIS.</p>
+          <footer class="item-editor-actions"><a class="btn btn-secondary" href="{{ request.path }}" data-workspace-link>Cancelar</a><button class="btn btn-primary" type="submit">{% if editing %}Guardar cambios{% else %}Agregar a la factura{% endif %}</button></footer>
+        </form>
+      </section>
+      {% endif %}
+      <div class="items-list">{% for linea in borrador.lineas %}
+        <article class="card item-line"><header><span class="line-number">{{ forloop.counter }}</span><div class="item-line-name"><h3>{{ linea.concepto }}</h3><span class="badge badge-info">{{ linea.tipo_display }}</span>{% if linea.descuento %}<span class="badge badge-warning">Con descuento</span>{% endif %}</div><strong class="item-line-total tabular-numbers">{{ linea.total|moneda_rd }}<small>Incluye ITBIS</small></strong></header>{% if linea.descripcion %}<p class="item-line-description">{{ linea.descripcion }}</p>{% endif %}
+          <dl class="item-line-values"><div><dt>Cantidad · {{ linea.unidad }}</dt><dd>{{ linea.cantidad|floatformat:2 }}</dd></div><div><dt>Precio unitario</dt><dd>{{ linea.precio|moneda_rd }}</dd></div><div><dt>ITBIS (18%)</dt><dd>{{ linea.itbis|moneda_rd }}</dd></div><div><dt>Descuento</dt><dd>{{ linea.descuento|moneda_rd }}</dd></div></dl>
+          <footer><span>Base: {{ linea.base|moneda_rd }}</span><div><a href="?editar={{ linea.id }}" class="link-with-icon" data-workspace-link>{% include 'includes/icon.html' with name='edit' %} Editar</a><form method="post" action="{{ request.path }}" data-remove-form data-concepto="{{ linea.concepto }}">{% csrf_token %}<input type="hidden" name="accion" value="quitar"><input type="hidden" name="revision" value="{{ borrador.revision_lineas }}"><input type="hidden" name="linea_id" value="{{ linea.id }}"><button class="item-remove" type="submit">{% include 'includes/icon.html' with name='close-circle' %} Quitar</button></form></div></footer>
+        </article>
+      {% empty %}{% if not editor_open %}<div class="card empty-state items-empty"><span class="empty-state-icon">{% include 'includes/icon.html' with name='invoices' %}</span><h3>Tu factura comienza aquí</h3><p class="text-muted">Agrega el primer bien o servicio. Calcularemos los importes por ti.</p><a href="?nuevo=1" class="btn btn-primary" data-workspace-link>{% include 'includes/icon.html' with name='plus' %} Agregar primer concepto</a></div>{% endif %}{% endfor %}</div>
+    </section>
+    <aside class="items-preview-column" aria-label="Vista previa"><div class="items-preview-heading"><h2>{% include 'includes/icon.html' with name='eye' %} Vista previa</h2><span class="badge badge-neutral" data-preview-status role="status">Actualizada</span></div><div data-invoice-preview>{% include 'comprobantes/includes/items_preview.html' %}</div></aside>
+  </div>
+  <footer class="items-page-actions"><a href="{% url 'comprobantes:datos' borrador_id=borrador.id %}" class="btn btn-secondary">← Volver a datos generales</a><p class="text-muted">{{ borrador.lineas|length }} concepto{{ borrador.lineas|length|pluralize }} · <strong>{{ resumen.total|moneda_rd }}</strong></p><form method="post" action="{{ request.path }}" data-continue-form>{% csrf_token %}<input type="hidden" name="accion" value="continuar"><button class="btn btn-primary" type="submit" {% if not borrador.lineas %}disabled{% endif %}>Continuar a totales {% include 'includes/icon.html' with name='arrow-right' %}</button></form></footer>
+</div>
+<dialog class="dialog items-remove-dialog" aria-labelledby="remove-title" aria-describedby="remove-description"><h2 id="remove-title">¿Quitar este concepto?</h2><p id="remove-description"></p><div class="form-actions"><button class="btn btn-secondary" type="button" data-remove-cancel>Cancelar</button><button class="btn btn-danger" type="button" data-remove-confirm>Quitar concepto</button></div></dialog>
+<p class="sr-only" role="status" data-items-announcement></p>
+{% endblock %}

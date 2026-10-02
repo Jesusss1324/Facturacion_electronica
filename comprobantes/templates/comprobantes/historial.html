@@ -1,0 +1,510 @@
+{% extends 'layouts/app.html' %}
+{% load static ui_format %}
+
+{% block extra_css %}
+  <link rel="stylesheet" href="{% static 'css/pages/comprobante-historial.css' %}">
+{% endblock %}
+
+{% block extra_js %}
+  <script src="{% static 'js/pages/comprobante-historial.js' %}" defer></script>
+{% endblock %}
+
+{% block page_header %}
+<header class="page-header historial-header">
+  <div>
+    <div class="header-pretitle">
+      <span class="eyebrow">Facturación Electrónica</span>
+      <span class="badge badge-info">Ley 32-23</span>
+    </div>
+    <h1 class="page-title">Historial de facturas & Expediente Activo</h1>
+    <p class="page-description text-muted">
+      Explora el archivo tributario inmutable con inspección directa en tiempo real sin abandonar la vista de lista.
+    </p>
+  </div>
+  <div class="page-actions header-action-buttons">
+    <a href="?{% if query %}q={{ query }}&{% endif %}{% if tipo_ecf %}tipo_ecf={{ tipo_ecf }}&{% endif %}{% if estado %}estado={{ estado }}&{% endif %}export=csv" class="btn btn-outline btn-sm">
+      <svg class="icon icon-xs" aria-hidden="true" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+      </svg>
+      <span>Exportar CSV</span>
+    </a>
+    <a href="{% url 'comprobantes:nueva' %}" class="btn btn-primary btn-sm">
+      <svg class="icon icon-xs" aria-hidden="true" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+      </svg>
+      <span>+ Nueva factura</span>
+    </a>
+  </div>
+</header>
+{% endblock %}
+
+{% block content %}
+<div class="historial-wrapper" data-historial-root>
+
+  {# BARRA DE CONTROL Y BÚSQUEDA #}
+  <div class="card toolbar-card">
+    
+    {# Fila 1: Búsqueda y Switch de Vista #}
+    <div class="toolbar-top-row">
+      <form class="search-form" method="get" action="{% url 'comprobantes:historial' %}" role="search" id="form-busqueda">
+        <div class="search-input-group">
+          <svg class="search-icon icon icon-xs" aria-hidden="true" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <circle cx="11" cy="11" r="8" stroke-width="2" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35" />
+          </svg>
+          <input
+            type="search"
+            name="q"
+            id="input-busqueda"
+            class="form-control search-field"
+            placeholder="Buscar por e-NCF, RNC o cliente..."
+            value="{{ query }}"
+            autocomplete="off"
+          >
+          {% if query %}
+            <a href="{% url 'comprobantes:historial' %}?filtro={{ filtro_rapido }}&vista={{ vista }}" class="btn-clear-search" title="Limpiar búsqueda">&times;</a>
+          {% endif %}
+        </div>
+
+        <input type="hidden" name="filtro" value="{{ filtro_rapido }}">
+        <input type="hidden" name="vista" value="{{ vista }}">
+        {% if tipo_ecf %}<input type="hidden" name="tipo_ecf" value="{{ tipo_ecf }}">{% endif %}
+        {% if estado %}<input type="hidden" name="estado" value="{{ estado }}">{% endif %}
+        {% if fecha_desde %}<input type="hidden" name="fecha_desde" value="{{ fecha_desde }}">{% endif %}
+        {% if fecha_hasta %}<input type="hidden" name="fecha_hasta" value="{{ fecha_hasta }}">{% endif %}
+
+        <button type="submit" class="btn btn-outline btn-sm">Buscar</button>
+      </form>
+
+      {# Alternador de Vista (Dividida con Expediente vs Tabla Completa) #}
+      <div class="view-mode-toggle" role="group" aria-label="Modo de visualización">
+        <a
+          href="?{% if query %}q={{ query }}&{% endif %}{% if tipo_ecf %}tipo_ecf={{ tipo_ecf }}&{% endif %}{% if estado %}estado={{ estado }}&{% endif %}filtro={{ filtro_rapido }}&vista=dividida"
+          class="btn-toggle {% if vista == 'dividida' %}is-active{% endif %}"
+          title="Vista dividida con expediente activo"
+        >
+          <svg class="icon icon-xs" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" />
+          </svg>
+          <span>Dividida</span>
+        </a>
+        <a
+          href="?{% if query %}q={{ query }}&{% endif %}{% if tipo_ecf %}tipo_ecf={{ tipo_ecf }}&{% endif %}{% if estado %}estado={{ estado }}&{% endif %}filtro={{ filtro_rapido }}&vista=tabla"
+          class="btn-toggle {% if vista == 'tabla' %}is-active{% endif %}"
+          title="Vista de tabla completa"
+        >
+          <svg class="icon icon-xs" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+          </svg>
+          <span>Tabla</span>
+        </a>
+      </div>
+    </div>
+
+    {# Fila 2: Pills de Filtrado Rápido #}
+    <div class="toolbar-pills-row">
+      <nav class="quick-pills" aria-label="Filtros rápidos de comprobantes">
+        <a href="?vista={{ vista }}" class="pill-btn {% if filtro_rapido == 'todos' and not tipo_ecf and not estado %}is-active{% endif %}">
+          Todos <span class="pill-count">({{ cuenta_todos }})</span>
+        </a>
+        <a href="?filtro=e31&vista={{ vista }}" class="pill-btn {% if filtro_rapido == 'e31' or tipo_ecf == '31' %}is-active{% endif %}">
+          E31 Crédito Fiscal <span class="pill-count">({{ cuenta_e31 }})</span>
+        </a>
+        <a href="?filtro=e32&vista={{ vista }}" class="pill-btn {% if filtro_rapido == 'e32' or tipo_ecf == '32' %}is-active{% endif %}">
+          E32 Consumo <span class="pill-count">({{ cuenta_e32 }})</span>
+        </a>
+        <a href="?filtro=aprobados&vista={{ vista }}" class="pill-btn pill-success {% if filtro_rapido == 'aprobados' or estado == 'aprobado' %}is-active{% endif %}">
+          ✔ Aprobados <span class="pill-count">({{ cuenta_aprobados }})</span>
+        </a>
+        <a href="?filtro=rechazados&vista={{ vista }}" class="pill-btn pill-danger {% if filtro_rapido == 'rechazados' or estado == 'rechazado' %}is-active{% endif %}">
+          ⊗ Rechazados <span class="pill-count">({{ cuenta_rechazados }})</span>
+        </a>
+      </nav>
+
+      <span class="count-summary text-muted">
+        Mostrando <strong>{{ page_obj.paginator.count }}</strong> comprobante{{ page_obj.paginator.count|pluralize }}
+      </span>
+    </div>
+
+    {# Filtros activos aplicados (chips) #}
+    {% if filtros_activos or query %}
+      <div class="active-filters-chips">
+        <span class="chips-label">Filtros activos:</span>
+        {% if query %}
+          <span class="filter-chip">
+            Búsqueda: "{{ query }}"
+            <a href="?{% if tipo_ecf %}tipo_ecf={{ tipo_ecf }}&{% endif %}{% if estado %}estado={{ estado }}&{% endif %}filtro={{ filtro_rapido }}&vista={{ vista }}" class="chip-remove">&times;</a>
+          </span>
+        {% endif %}
+        {% for fa in filtros_activos %}
+          <span class="filter-chip">
+            {{ fa.label }}
+            <a href="?{% if query %}q={{ query }}&{% endif %}vista={{ vista }}" class="chip-remove">&times;</a>
+          </span>
+        {% endfor %}
+        <a href="{% url 'comprobantes:historial' %}?vista={{ vista }}" class="btn-clear-all text-muted">Limpiar filtros</a>
+      </div>
+    {% endif %}
+
+  </div>
+
+  {# ESTADOS VACÍOS O RESULTADOS #}
+  {% if total_general == 0 %}
+    
+    {# Estado 1: Base de datos / historial completamente vacío #}
+    <div class="card empty-state-card">
+      <div class="empty-icon-circle">
+        <svg class="icon icon-lg text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+        </svg>
+      </div>
+      <h2 class="empty-title">Historial de comprobantes vacío</h2>
+      <p class="empty-description text-muted">
+        Aún no has generado ninguna factura electrónica en esta sesión.
+      </p>
+      <a href="{% url 'comprobantes:nueva' %}" class="btn btn-primary">
+        + Crear primera factura
+      </a>
+    </div>
+
+  {% elif page_obj.paginator.count == 0 %}
+
+    {# Estado 2: Búsqueda sin coincidencias #}
+    <div class="card empty-state-card">
+      <div class="empty-icon-circle">
+        <svg class="icon icon-lg text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+        </svg>
+      </div>
+      <h2 class="empty-title">No se encontraron comprobantes fiscales</h2>
+      <p class="empty-description text-muted">
+        No se hallaron coincidencias con los criterios o el e-NCF ingresado.
+      </p>
+      <a href="{% url 'comprobantes:historial' %}" class="btn btn-outline">
+        Restablecer criterios
+      </a>
+    </div>
+
+  {% else %}
+
+    {# MODO 1: VISTA DIVIDIDA (MASTER-DETAIL CON EXPEDIENTE ACTIVO) #}
+    {% if vista == 'dividida' %}
+      <div class="split-layout">
+        
+        {# LISTA DE COMPROBANTES (COLUMNA IZQUIERDA) #}
+        <div class="split-list-col">
+          <div class="invoice-items-list" role="list">
+            {% for item in page_obj %}
+              <article
+                class="invoice-card-item card {% if item.factura.id == selected_id %}is-selected{% endif %}"
+                data-invoice-id="{{ item.factura.id }}"
+              >
+                <div class="item-header-row">
+                  <div class="item-encf-group">
+                    <svg class="icon icon-xs text-muted" aria-hidden="true" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <a href="?selected_id={{ item.factura.id }}{% if query %}&q={{ query }}{% endif %}{% if tipo_ecf %}&tipo_ecf={{ tipo_ecf }}{% endif %}{% if estado %}&estado={{ estado }}{% endif %}&filtro={{ filtro_rapido }}&vista={{ vista }}&page={{ page_obj.number }}" class="item-encf-link code-font">
+                      {{ item.factura.e_ncf }}
+                    </a>
+                    <span class="badge badge-subtle">E{{ item.factura.tipo_ecf }} {{ item.factura.tipo_display }}</span>
+                  </div>
+
+                  <strong class="item-total-val code-font">{{ item.factura.monto_total|moneda_rd }}</strong>
+                </div>
+
+                <div class="item-body-row">
+                  <div>
+                    <h3 class="item-client-name">{{ item.cliente.nombre }}</h3>
+                    <div class="item-client-meta text-muted">
+                      <span>RNC: {{ item.cliente.identificacion_display }}</span> ·
+                      <span>{{ item.factura.fecha_emision|date:"d M - H:i" }}</span>
+                    </div>
+                  </div>
+
+                  <div class="item-status-wrapper">
+                    {% if item.factura.estado == 'aprobado' %}
+                      <span class="badge badge-success-subtle">● Aprobado DGII</span>
+                    {% elif item.factura.estado == 'rechazado' %}
+                      <span class="badge badge-danger-subtle">● Rechazado</span>
+                    {% elif item.factura.estado == 'anulado' %}
+                      <span class="badge badge-warning-subtle">● Anulado</span>
+                    {% else %}
+                      <span class="badge badge-primary-subtle">● {{ item.factura.estado_display }}</span>
+                    {% endif %}
+                  </div>
+                </div>
+              </article>
+            {% endfor %}
+          </div>
+
+          {# PAGINACIÓN DE LA LISTA #}
+          <div class="pagination-footer">
+            <span class="text-muted small">
+              Página <strong>{{ page_obj.number }}</strong> de {{ page_obj.paginator.num_pages }} ({{ page_obj.paginator.count }} registros)
+            </span>
+
+            <nav class="pagination-nav" aria-label="Navegación de páginas">
+              {% if page_obj.has_previous %}
+                <a href="?page={{ page_obj.previous_page_number }}{% if query %}&q={{ query }}{% endif %}{% if tipo_ecf %}&tipo_ecf={{ tipo_ecf }}{% endif %}{% if estado %}&estado={{ estado }}{% endif %}&filtro={{ filtro_rapido }}&vista={{ vista }}" class="page-link">&larr;</a>
+              {% else %}
+                <span class="page-link is-disabled">&larr;</span>
+              {% endif %}
+
+              {% for p in page_obj.paginator.page_range %}
+                {% if p == page_obj.number %}
+                  <span class="page-link is-active" aria-current="page">{{ p }}</span>
+                {% elif p >= page_obj.number|add:"-2" and p <= page_obj.number|add:"2" %}
+                  <a href="?page={{ p }}{% if query %}&q={{ query }}{% endif %}{% if tipo_ecf %}&tipo_ecf={{ tipo_ecf }}{% endif %}{% if estado %}&estado={{ estado }}{% endif %}&filtro={{ filtro_rapido }}&vista={{ vista }}" class="page-link">{{ p }}</a>
+                {% endif %}
+              {% endfor %}
+
+              {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}{% if query %}&q={{ query }}{% endif %}{% if tipo_ecf %}&tipo_ecf={{ tipo_ecf }}{% endif %}{% if estado %}&estado={{ estado }}{% endif %}&filtro={{ filtro_rapido }}&vista={{ vista }}" class="page-link">&rarr;</a>
+              {% else %}
+                <span class="page-link is-disabled">&rarr;</span>
+              {% endif %}
+            </nav>
+          </div>
+        </div>
+
+        {# EXPEDIENTE ACTIVO (COLUMNA DERECHA) #}
+        <aside class="split-inspector-col" aria-label="Expediente fiscal seleccionado">
+          {% if expediente %}
+            <div class="card inspector-card">
+              
+              {# Encabezado Azul Marino del Expediente #}
+              <div class="inspector-navy-header">
+                <div class="navy-pretitle">
+                  <div class="navy-badge-tag">
+                    <svg class="icon icon-xs text-primary-light" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                    </svg>
+                    <span>EXPEDIENTE FISCAL ACTIVO</span>
+                  </div>
+                  <span class="sync-status">● Sincronizado DGII</span>
+                </div>
+
+                <div class="navy-main-row">
+                  <div>
+                    <strong class="navy-encf code-font">{{ expediente.factura.e_ncf }}</strong>
+                    <div class="navy-trackid code-font text-muted">TrackId: {{ expediente.factura.track_id_display }}</div>
+                  </div>
+                  <div class="navy-total-box">
+                    <span class="total-label">TOTAL FISCAL</span>
+                    <strong class="total-amount code-font">{{ expediente.factura.monto_total|moneda_rd }}</strong>
+                  </div>
+                </div>
+              </div>
+
+              {# Cuerpo del Expediente #}
+              <div class="inspector-body">
+                
+                {# Estado de Timbrado #}
+                <div class="inspector-status-box {% if expediente.es_aprobado %}status-box-aprobado{% elif expediente.es_rechazado %}status-box-rechazado{% else %}status-box-anulado{% endif %}">
+                  <div class="status-box-icon">
+                    {% if expediente.es_aprobado %}
+                      <svg class="icon icon-sm text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    {% else %}
+                      <svg class="icon icon-sm text-danger" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                      </svg>
+                    {% endif %}
+                  </div>
+                  <div>
+                    <strong class="status-box-title">
+                      {% if expediente.es_aprobado %}
+                        Aprobado y Timbrado por DGII
+                      {% elif expediente.es_rechazado %}
+                        Rechazado por DGII
+                      {% else %}
+                        Comprobante Anulado
+                      {% endif %}
+                    </strong>
+                    <p class="status-box-desc text-muted">
+                      {% if expediente.es_aprobado %}
+                        Acuse de recibo conforme · Sello criptográfico validado.
+                      {% elif expediente.es_rechazado %}
+                        Rechazo en validación fiscal de receptor o impuestos.
+                      {% else %}
+                        Sin efecto tributario registrado en log de auditoría.
+                      {% endif %}
+                    </p>
+                  </div>
+                </div>
+
+                {# Emisor & Receptor #}
+                <div class="inspector-parties-grid">
+                  <div class="party-col">
+                    <span class="party-label">EMISOR AUTORIZADO</span>
+                    <strong class="party-name">{{ expediente.emisor.razon_social }}</strong>
+                    <span class="party-rnc text-muted">RNC: {{ expediente.emisor.rnc }}</span>
+                  </div>
+                  <div class="party-col">
+                    <span class="party-label">RECEPTOR FISCAL</span>
+                    <strong class="party-name">{{ expediente.cliente.nombre }}</strong>
+                    <span class="party-rnc text-muted">RNC: {{ expediente.cliente.identificacion_display }}</span>
+                  </div>
+                </div>
+
+                {# Desglose de Ítems #}
+                <div class="inspector-items-section">
+                  <div class="items-header-row">
+                    <span class="items-section-title">DESGLOSE DE ÍTEMS e-CF</span>
+                    <span class="items-count-badge text-muted">{{ expediente.total_items }} concepto{{ expediente.total_items|pluralize }}</span>
+                  </div>
+
+                  <div class="inspector-items-list">
+                    {% for item in expediente.items %}
+                      <div class="inspector-item-row">
+                        <div class="item-row-left">
+                          <strong class="item-row-concept">{{ item.concepto }}</strong>
+                          <span class="item-row-tax text-muted">{{ item.itbis_nota }}</span>
+                        </div>
+                        <div class="item-row-right">
+                          <span class="item-row-qty code-font">Cant. {{ item.cantidad|numero_decimal }}</span>
+                          <strong class="item-row-amount code-font">{{ item.monto|moneda_rd }}</strong>
+                        </div>
+                      </div>
+                    {% endfor %}
+                  </div>
+
+                  <div class="inspector-subtotal-bar">
+                    <span class="text-muted">Subtotal Gravado (ITBIS 18%):</span>
+                    <strong class="code-font">{{ expediente.subtotal_gravado|moneda_rd }}</strong>
+                  </div>
+                </div>
+
+              </div>
+
+              {# Acciones Operacionales Inferiores #}
+              <footer class="inspector-footer">
+                <a href="{% url 'comprobantes:xml' pk=expediente.factura.id %}" class="btn btn-outline btn-sm">
+                  &lt;&gt; XML
+                </a>
+                <a href="{% url 'comprobantes:pdf' pk=expediente.factura.id %}" class="btn btn-outline btn-sm">
+                  PDF
+                </a>
+                <a href="{% url 'comprobantes:detalle' pk=expediente.factura.id %}" class="btn btn-primary btn-sm btn-full-action">
+                  <span>Abrir expediente completo</span>
+                  <span>&rarr;</span>
+                </a>
+              </footer>
+
+            </div>
+          {% endif %}
+        </aside>
+
+      </div>
+
+    {# MODO 2: VISTA TABLA COMPLETA #}
+    {% else %}
+      
+      <div class="card table-view-card">
+        <div class="table-responsive">
+          <table class="data-table full-history-table">
+            <thead>
+              <tr>
+                <th scope="col">E-NCF</th>
+                <th scope="col">TIPO</th>
+                <th scope="col">CLIENTE / RAZÓN SOCIAL</th>
+                <th scope="col">FECHA / HORA</th>
+                <th scope="col" class="text-right">TOTAL FACTURA</th>
+                <th scope="col">ESTADO FISCAL DGII</th>
+                <th scope="col" class="text-right">ACCIONES</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in page_obj %}
+                <tr>
+                  <td>
+                    <div class="table-encf-cell">
+                      <svg class="icon icon-xs text-muted" aria-hidden="true" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                      <strong class="code-font">{{ item.factura.e_ncf }}</strong>
+                    </div>
+                  </td>
+                  <td>
+                    <span class="badge badge-subtle">E{{ item.factura.tipo_ecf }} {{ item.factura.tipo_display }}</span>
+                  </td>
+                  <td>
+                    <div class="table-client-cell">
+                      <strong class="d-block">{{ item.cliente.nombre }}</strong>
+                      <span class="text-muted small">RNC: {{ item.cliente.identificacion_display }}</span>
+                    </div>
+                  </td>
+                  <td>
+                    <span class="tabular-numbers">{{ item.factura.fecha_emision|date:"d/m/Y · H:i" }}</span>
+                  </td>
+                  <td class="text-right">
+                    <strong class="code-font">{{ item.factura.monto_total|moneda_rd }}</strong>
+                  </td>
+                  <td>
+                    {% if item.factura.estado == 'aprobado' %}
+                      <span class="badge badge-success-subtle">✔ Aprobado DGII</span>
+                    {% elif item.factura.estado == 'rechazado' %}
+                      <span class="badge badge-danger-subtle">⊗ Rechazado</span>
+                    {% elif item.factura.estado == 'anulado' %}
+                      <span class="badge badge-warning-subtle">⊘ Anulado</span>
+                    {% else %}
+                      <span class="badge badge-primary-subtle">{{ item.factura.estado_display }}</span>
+                    {% endif %}
+                  </td>
+                  <td class="text-right">
+                    <div class="table-action-btns">
+                      <a href="{% url 'comprobantes:detalle' pk=item.factura.id %}" class="btn btn-primary btn-xs">
+                        Ver factura
+                      </a>
+                      <a href="{% url 'comprobantes:xml' pk=item.factura.id %}" class="btn btn-outline btn-xs" title="Ver XML">
+                        &lt;&gt;
+                      </a>
+                      <a href="{% url 'comprobantes:pdf' pk=item.factura.id %}" class="btn btn-outline btn-xs" title="Ver PDF">
+                        PDF
+                      </a>
+                    </div>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+        {# Paginación de la tabla completa #}
+        <div class="pagination-footer">
+          <span class="text-muted small">
+            Mostrando <strong>{{ page_obj.start_index }}</strong> a <strong>{{ page_obj.end_index }}</strong> de <strong>{{ page_obj.paginator.count }}</strong> facturas
+          </span>
+
+          <nav class="pagination-nav" aria-label="Navegación de páginas">
+            {% if page_obj.has_previous %}
+              <a href="?page={{ page_obj.previous_page_number }}{% if query %}&q={{ query }}{% endif %}{% if tipo_ecf %}&tipo_ecf={{ tipo_ecf }}{% endif %}{% if estado %}&estado={{ estado }}{% endif %}&filtro={{ filtro_rapido }}&vista={{ vista }}" class="page-link">&larr; Anterior</a>
+            {% else %}
+              <span class="page-link is-disabled">&larr; Anterior</span>
+            {% endif %}
+
+            {% for p in page_obj.paginator.page_range %}
+              {% if p == page_obj.number %}
+                <span class="page-link is-active" aria-current="page">{{ p }}</span>
+              {% elif p >= page_obj.number|add:"-2" and p <= page_obj.number|add:"2" %}
+                <a href="?page={{ p }}{% if query %}&q={{ query }}{% endif %}{% if tipo_ecf %}&tipo_ecf={{ tipo_ecf }}{% endif %}{% if estado %}&estado={{ estado }}{% endif %}&filtro={{ filtro_rapido }}&vista={{ vista }}" class="page-link">{{ p }}</a>
+              {% endif %}
+            {% endfor %}
+
+            {% if page_obj.has_next %}
+              <a href="?page={{ page_obj.next_page_number }}{% if query %}&q={{ query }}{% endif %}{% if tipo_ecf %}&tipo_ecf={{ tipo_ecf }}{% endif %}{% if estado %}&estado={{ estado }}{% endif %}&filtro={{ filtro_rapido }}&vista={{ vista }}" class="page-link">Siguiente &rarr;</a>
+            {% else %}
+              <span class="page-link is-disabled">Siguiente &rarr;</span>
+            {% endif %}
+          </nav>
+        </div>
+      </div>
+
+    {% endif %}
+
+  {% endif %}
+
+</div>
+{% endblock %}

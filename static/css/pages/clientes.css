@@ -1,0 +1,56 @@
+@layer components {
+  .clients-header { align-items: center; }
+  .clients-title { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); margin-bottom: var(--space-2); }
+  .clients-title h1 { font-size: var(--font-size-xl); }
+  .clients-title .badge { font-size: var(--font-size-xs); }
+  .clients-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-4); padding: var(--space-4); margin-bottom: var(--space-5); }
+  .clients-search { position: relative; flex: 1 1 20rem; }
+  .clients-search .form-control { padding-left: 2.75rem; background: var(--color-background); border-color: transparent; }
+  .clients-search .form-control:focus { background: var(--color-surface); border-color: var(--color-focus); }
+  .search-button { position: absolute; inset: 0 auto 0 0; display: grid; place-items: center; width: 2.75rem; border: 0; border-radius: var(--radius-sm); color: var(--color-muted); background: transparent; }
+  .clients-count { display: flex; align-items: center; gap: var(--space-2); white-space: nowrap; }
+  .clients-count > span { color: var(--color-muted); text-transform: uppercase; font-size: 0.6875rem; }
+  .clients-count strong { font-size: var(--font-size-sm); }
+  .clients-results { overflow: hidden; }
+  .clients-table { min-width: 50rem; }
+  .clients-table th { font-size: 0.6875rem; text-transform: uppercase; letter-spacing: 0.025em; white-space: nowrap; }
+  .clients-table td { padding-block: var(--space-4); font-size: var(--font-size-sm); }
+  .clients-table th:first-child, .clients-table td:first-child { padding-left: var(--space-5); }
+  .clients-table th:last-child, .clients-table td:last-child { padding-right: var(--space-5); }
+  .client-document { display: inline-block; padding: 0 var(--space-1); background: var(--color-primary-soft); color: var(--color-primary); border-radius: var(--radius-sm); font-weight: 600; white-space: nowrap; }
+  .client-secondary { display: block; margin-top: var(--space-1); color: var(--color-muted); font-size: var(--font-size-xs); }
+  .client-name { display: block; min-width: 15rem; font-weight: 600; text-decoration: none; }
+  .client-name:hover { text-decoration: underline; }
+  .client-phone { white-space: nowrap; color: var(--color-muted); }
+  .client-status { white-space: nowrap; }
+  .client-status .icon { width: 0.875rem; height: 0.875rem; }
+  .client-inactive { background: var(--color-background); }
+  .client-inactive .client-name { color: var(--color-muted); }
+  .client-actions { display: flex; align-items: center; justify-content: flex-end; gap: var(--space-1); }
+  .client-view { display: inline-flex; align-items: center; gap: var(--space-1); min-height: 2.75rem; text-decoration: none; font-size: var(--font-size-xs); font-weight: 600; }
+  .client-view .icon { width: 1rem; height: 1rem; }
+  .client-actions .btn-icon { width: 2rem; }
+  .clients-empty { min-height: 22rem; align-content: center; }
+  .clients-empty h2 { font-size: var(--font-size-lg); }
+  .clients-empty p { max-width: 30rem; }
+  .clients-empty .empty-state-icon { width: 4rem; height: 4rem; border-radius: var(--radius-pill); }
+  .clients-empty .btn { margin-top: var(--space-3); }
+  .clients-loading { padding: var(--space-5); display: grid; gap: var(--space-4); }
+  .skeleton-heading { height: 2.25rem; }
+  .skeleton-row { height: 4rem; }
+  .skeleton-footer { width: 35%; height: 1.5rem; }
+  .clients-scroll-hint { display: none; }
+  .client-confirm h2 { font-size: var(--font-size-xl); margin-bottom: var(--space-4); }
+  [data-directory-error] { margin-bottom: var(--space-4); }
+  @media (max-width: 60rem) { .clients-scroll-hint { display: block; padding: var(--space-3) var(--space-4); color: var(--color-muted); font-size: var(--font-size-xs); } }
+  @media (max-width: 40rem) {
+    .clients-header > .btn { width: 100%; }
+    .clients-search { flex-basis: 100%; }
+    .clients-toolbar { gap: var(--space-3); }
+    .clients-toolbar .segmented-control { width: 100%; }
+    .clients-toolbar .segment { flex: 1; padding-inline: var(--space-2); font-size: var(--font-size-xs); }
+    .clients-count { margin-left: auto; }
+    .clients-results .card-footer { padding: var(--space-4); }
+    .clients-empty { padding: var(--space-8) var(--space-4); }
+  }
+}

@@ -1,0 +1,207 @@
+{% extends 'layouts/app.html' %}
+{% load static ui_format %}
+
+{% block extra_css %}
+  <link rel="stylesheet" href="{% static 'css/pages/comprobante-procesamiento.css' %}">
+{% endblock %}
+
+{% block extra_js %}
+  <script src="{% static 'js/pages/comprobante-procesamiento.js' %}" defer></script>
+{% endblock %}
+
+{% block content %}
+<div class="processing-page-container" data-estado-inicial="{{ estado_vista }}" data-factura-id="{{ factura.id }}" data-track-id="{{ track_id }}">
+
+  {# BANNERS DE ESTADO SUPERIORES #}
+  <div class="processing-alerts-region">
+    {# Banner Éxito (Timbrado Completado) #}
+    <div class="alert alert-success processing-alert {% if estado_vista != 'completado' %}d-none{% endif %}" id="banner-exito" role="alert">
+      <div class="alert-icon-circle bg-success">
+        <svg class="icon icon-md" aria-hidden="true" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+        </svg>
+      </div>
+      <div class="alert-content">
+        <h2 class="alert-heading">¡Comprobante Timbrado y Aceptado!</h2>
+        <p class="alert-description">
+          El servicio DGII ha otorgado acuse de recibo conforme bajo el TrackId <strong>{{ track_id }}</strong>. El documento ya cuenta con validez fiscal completa.
+        </p>
+      </div>
+      <div class="alert-actions">
+        <a href="{% url 'comprobantes:resultado' pk=factura.id %}" class="btn btn-success btn-sm btn-go-result">
+          Ver Factura Emitida (UI-14) &rarr;
+        </a>
+      </div>
+    </div>
+
+    {# Banner Error de Validación Fiscal #}
+    <div class="alert alert-danger processing-alert {% if estado_vista != 'error_validacion' %}d-none{% endif %}" id="banner-error-validacion" role="alert">
+      <div class="alert-icon-circle bg-danger">
+        <svg class="icon icon-md" aria-hidden="true" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+        </svg>
+      </div>
+      <div class="alert-content">
+        <h2 class="alert-heading">Detenido: Inconsistencia detectada en validación fiscal (Regla RN-032)</h2>
+        <p class="alert-description">
+          Se encontró una discrepancia en la validación fiscal antes de la transmisión del XML-DSig. Corrige los valores para proceder.
+        </p>
+      </div>
+      <div class="alert-actions">
+        <a href="{% url 'comprobantes:historial' %}" class="btn btn-danger btn-sm">Corregir comprobante</a>
+        <button type="button" class="btn btn-outline btn-sm" id="btn-reintentar-validacion">Reintentar validación</button>
+      </div>
+    </div>
+
+    {# Banner Timeout / Retraso de Red #}
+    <div class="alert alert-warning processing-alert {% if estado_vista != 'error_timeout' %}d-none{% endif %}" id="banner-timeout" role="alert">
+      <div class="alert-icon-circle bg-warning">
+        <svg class="icon icon-md" aria-hidden="true" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      </div>
+      <div class="alert-content">
+        <h2 class="alert-heading">El servicio tardó más de lo esperado en responder</h2>
+        <p class="alert-description">
+          Tu factura ya está firmada y asegurada con certificado digital. Solo falta la confirmación de recepción del endpoint receptor.
+        </p>
+      </div>
+      <div class="alert-actions">
+        <button type="button" class="btn btn-primary btn-sm" id="btn-reintentar-transmision">Reintentar transmisión</button>
+        <a href="{% url 'comprobantes:historial' %}" class="btn btn-outline btn-sm">Guardar y enviar luego</a>
+      </div>
+    </div>
+  </div>
+
+  {# BADGE DE FASE SUPERIOR #}
+  <div class="processing-phase-badge-wrapper text-center">
+    <span class="badge badge-info" id="phase-badge">
+      <span class="pulse-dot" aria-hidden="true"></span>
+      <span id="phase-badge-text">Emisión desatendida en curso - Fase 4 de 6</span>
+    </span>
+  </div>
+
+  {# INDICADOR CIRCULAR CENTRAL #}
+  <div class="processing-circle-wrapper">
+    <div class="circle-container" id="circle-container">
+      <svg class="progress-ring" width="240" height="240" viewBox="0 0 240 240">
+        <circle class="progress-ring-track" stroke="#e2e8f0" stroke-width="8" fill="transparent" r="100" cx="120" cy="120"/>
+        <circle class="progress-ring-indicator" id="progress-indicator" stroke="#1d4ed8" stroke-width="8" stroke-dasharray="628" stroke-dashoffset="209" stroke-linecap="round" fill="transparent" r="100" cx="120" cy="120"/>
+      </svg>
+
+      <div class="circle-content-inner" id="circle-content-inner">
+        <div class="circle-icon-box" id="circle-icon-box">
+          {# Ícono dinámico: spinner por defecto #}
+          <div class="spinner-border text-primary" id="circle-spinner" role="status">
+            <span class="visually-hidden">Procesando...</span>
+          </div>
+          <svg class="icon icon-lg text-success d-none" id="circle-check-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+          </svg>
+          <svg class="icon icon-lg text-danger d-none" id="circle-error-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+          <svg class="icon icon-lg text-warning d-none" id="circle-timeout-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </div>
+
+        <h3 class="circle-title" id="circle-title">Firmando Digitalmente</h3>
+        <p class="circle-subtitle" id="circle-subtitle">PASO 4 DE 6</p>
+        <span class="circle-pill badge" id="circle-pill">XML-DSig RSA-2048</span>
+      </div>
+    </div>
+  </div>
+
+  {# TEXTOS EXPLICATIVOS CENTRALES #}
+  <div class="processing-explanation-region text-center">
+    <h2 class="processing-main-heading" id="processing-heading">
+      El comprobante se está procesando de manera segura
+    </h2>
+    <p class="processing-main-subtext text-muted" id="processing-subtext">
+      Puedes permanecer en esta pantalla o continuar trabajando; el comprobante se timbrará automáticamente en el servicio DGII bajo estricta conformidad fiscal de la Ley 32-23.
+    </p>
+  </div>
+
+  {# PIPELINE HORIZONTAL DE 6 FASES #}
+  <div class="pipeline-section">
+    <div class="pipeline-container" role="list">
+      {% for paso in pasos_pipeline %}
+      <div class="pipeline-card" data-step="{{ paso.num }}" id="pipeline-card-{{ paso.num }}">
+        <div class="pipeline-card-status-icon">
+          <svg class="icon icon-xs icon-step-check text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+          </svg>
+          <div class="step-spinner spinner-border-sm d-none"></div>
+          <svg class="icon icon-xs icon-step-cross text-danger d-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+          <svg class="icon icon-xs icon-step-wait text-muted d-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </div>
+        <span class="pipeline-card-name">{{ paso.nombre }}</span>
+        <span class="pipeline-card-phase">{{ paso.fase }}</span>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  {# TARJETA DE CONTEXTO DEL COMPROBANTE #}
+  <div class="factura-context-card card">
+    <div class="context-card-top">
+      <div class="context-meta-main">
+        <div class="context-icon-box">
+          <svg class="icon icon-md" aria-hidden="true" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+        </div>
+        <div>
+          <div class="context-title-row">
+            <strong class="context-doc-type">E{{ factura.tipo_ecf }} - {{ factura.tipo_display }} Electrónica</strong>
+            <span class="badge badge-primary-subtle" id="badge-encf-status">
+              e-NCF: {{ factura.e_ncf }}{% if factura.estado == 'aprobado' %} (Timbrado){% endif %}
+            </span>
+          </div>
+          <p class="context-client-info text-muted">
+            {{ cliente.nombre }} · {{ cliente.tipo_identificacion }}: {{ cliente.identificacion_display }}
+          </p>
+        </div>
+      </div>
+
+      <div class="context-amount-box text-right">
+        <span class="context-amount-label">MONTO A LIQUIDAR</span>
+        <div class="context-amount-value">
+          <span class="currency-symbol">RD$</span>
+          <span class="currency-number">{{ factura.monto_total|numero_decimal }}</span>
+          <span class="currency-code">DOP</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="context-pills-row">
+      <div class="context-pill">
+        <svg class="icon icon-xs text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <span><strong>{{ total_conceptos }} Concepto{{ total_conceptos|pluralize }}</strong> · Base Gravada + ITBIS 18%</span>
+      </div>
+
+      <div class="context-pill">
+        <svg class="icon icon-xs text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+        </svg>
+        <span><strong>Sello Local</strong> · {{ huella_corta }}</span>
+      </div>
+
+      <div class="context-pill">
+        <svg class="icon icon-xs text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+        </svg>
+        <span><strong>Destino Fiscal</strong> · DGII e-CF Ambiente Certificación / Timbrado</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

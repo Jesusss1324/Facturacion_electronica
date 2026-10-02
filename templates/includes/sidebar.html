@@ -1,0 +1,17 @@
+<aside class="sidebar" id="main-navigation" aria-label="Navegación principal">
+  <a class="brand" href="{% url 'core:inicio' %}">
+    <span class="brand-mark">{% include 'includes/icon.html' with name='invoices' %}</span>
+    <span class="brand-text">Facturación<span>Electrónica</span></span>
+  </a>
+  <nav class="nav-list">
+    {% for item in navigation_items %}
+      {% if item.section == 'legal' %}
+      <hr class="nav-divider" aria-hidden="true">
+      {% endif %}
+      <a class="nav-link{% if active_section == item.section %} is-active{% endif %}" href="{% url item.url_name %}"{% if active_section == item.section %} aria-current="page"{% endif %}>
+        {% include 'includes/icon.html' with name=item.icon %}
+        <span>{{ item.label }}</span>
+      </a>
+    {% endfor %}
+  </nav>
+</aside>

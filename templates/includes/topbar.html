@@ -1,0 +1,37 @@
+<header class="topbar">
+  <button class="btn btn-icon mobile-menu" type="button" data-nav-toggle aria-controls="main-navigation" aria-expanded="false" aria-label="Abrir navegación">
+    {% include 'includes/icon.html' with name='menu' %}
+  </button>
+  {% include 'includes/breadcrumbs.html' %}
+  <div class="topbar-user-menu" data-user-menu>
+    <button type="button" class="topbar-user-btn" id="user-menu-button" aria-expanded="false" aria-haspopup="true" aria-controls="user-dropdown-menu" data-user-menu-toggle>
+      <span class="topbar-user-avatar" aria-hidden="true">
+        {% if user.first_name and user.last_name %}
+          {{ user.first_name|first|upper }}{{ user.last_name|first|upper }}
+        {% else %}
+          {{ user.get_username|first|upper }}
+        {% endif %}
+      </span>
+      <div class="topbar-user-details">
+        <span class="topbar-user-name">{{ user.get_full_name|default:user.get_username }}</span>
+        <span class="topbar-user-role">{{ user.get_rol_display|default:'Usuario' }}</span>
+      </div>
+      <span class="topbar-user-chevron">
+        {% include 'includes/icon.html' with name='chevron-down' %}
+      </span>
+    </button>
+    <div class="topbar-dropdown" id="user-dropdown-menu" hidden data-user-dropdown>
+      <div class="topbar-dropdown-header">
+        <strong>{{ user.get_full_name|default:user.get_username }}</strong>
+        <span>{{ user.get_rol_display|default:'Usuario' }}</span>
+      </div>
+      <form action="{% url 'usuarios:logout' %}" method="post">
+        {% csrf_token %}
+        <button class="topbar-dropdown-item" type="submit">
+          {% include 'includes/icon.html' with name='logout' %}
+          <span>Cerrar sesión</span>
+        </button>
+      </form>
+    </div>
+  </div>
+</header>

@@ -1,0 +1,276 @@
+{% extends 'layouts/app.html' %}
+{% load static ui_format %}
+
+{% block title %}Marco Legal y Normativo | Facturación Electrónica{% endblock %}
+
+{% block extra_css %}
+  <link rel="stylesheet" href="{% static 'css/pages/marco-legal.css' %}">
+{% endblock %}
+
+{% block extra_js %}
+  <script src="{% static 'js/pages/marco-legal.js' %}" defer></script>
+{% endblock %}
+
+{% block page_header %}
+<header class="page-header legal-header">
+  <div class="legal-header-meta">
+    <div class="legal-category-pill">
+      <span>CUMPLIMIENTO FISCAL &amp; REGULATORIO DGII</span>
+      <span class="dot-sep">·</span>
+      <span>República Dominicana</span>
+    </div>
+    <h1 class="page-title legal-title">Marco Legal y Normativo</h1>
+    <p class="page-description text-muted legal-subtitle">
+      Compendio oficial de las leyes, normas generales de la Dirección General de Impuestos Internos (DGII), decretos y estándares técnicos que sustentan la emisión, validez jurídica y operación del Comprobante Fiscal Electrónico (e-CF).
+    </p>
+  </div>
+  <div class="page-actions legal-header-actions">
+    <a href="https://dgii.gov.do/facturacionElectronica/marcoLegal/Paginas/default.aspx" target="_blank" rel="noopener noreferrer" class="btn btn-outline btn-sm" title="Consultar portal oficial de la DGII">
+      <svg class="icon icon-xs" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+      </svg>
+      <span>Portal Oficial DGII</span>
+    </a>
+    <a href="{% url 'comprobantes:historial' %}" class="btn btn-primary btn-sm">
+      <svg class="icon icon-xs" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+      </svg>
+      <span>Ver facturas emitidas</span>
+    </a>
+  </div>
+</header>
+{% endblock %}
+
+{% block content %}
+<div class="legal-page-container">
+
+  {# BANNER PRINCIPAL DE CERTEZA JURÍDICA #}
+  <section class="legal-hero-card" aria-label="Garantía de cumplimiento legal">
+    <div class="hero-left">
+      <div class="hero-icon-box">
+        <svg class="icon icon-md" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+        </svg>
+      </div>
+      <div>
+        <h2 class="hero-title">Plena Validez Legal, Probatoria y Ejecutiva</h2>
+        <p class="hero-desc">
+          Conforme al <strong>Artículo 7 de la Ley Núm. 32-23</strong> y la <strong>Ley Núm. 126-02</strong>, los e-CF emitidos en este sistema poseen idéntico valor probatorio y fuerza ejecutiva que los comprobantes físicos tradicionales, garantizados mediante sellado de firma digital cualificada (XML-DSig RSA-SHA256).
+        </p>
+      </div>
+    </div>
+    <div class="hero-metrics">
+      <div class="metric-item">
+        <span class="metric-num">{{ total_normativas }}</span>
+        <span class="metric-label">Normativas Indexadas</span>
+      </div>
+      <div class="metric-divider"></div>
+      <div class="metric-item">
+        <span class="metric-num">10 Años</span>
+        <span class="metric-label">Conservación Digital</span>
+      </div>
+      <div class="metric-divider"></div>
+      <div class="metric-item">
+        <span class="metric-num">v1.0</span>
+        <span class="metric-label">Estándar e-CF DGII</span>
+      </div>
+    </div>
+  </section>
+
+  {# BARRA DE HERRAMIENTAS: BÚSQUEDA Y FILTROS POR CATEGORÍA #}
+  <section class="legal-toolbar-card" aria-label="Filtros del compendio legal">
+    <div class="toolbar-search-wrapper">
+      <svg class="search-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+      </svg>
+      <input
+        type="search"
+        id="legal-search-input"
+        class="legal-search-input"
+        placeholder="Buscar por número de ley, norma, artículo, tema (ej. ITBIS, firma digital, e-NCF)..."
+        value="{{ busqueda }}"
+        aria-label="Buscar en el marco legal"
+      >
+      <button type="button" class="clear-search-btn" id="btn-clear-legal-search" aria-label="Limpiar búsqueda" hidden>&times;</button>
+    </div>
+
+    <div class="toolbar-filters-pills" role="tablist" aria-label="Categorías normativas">
+      <a href="?{% if busqueda %}q={{ busqueda }}{% endif %}" class="filter-tab-pill{% if not filtro_tipo %} is-active{% endif %}" data-category="todas">
+        <span>Todas</span>
+        <span class="pill-count">{{ conteos.todas }}</span>
+      </a>
+      <a href="?tipo=ley{% if busqueda %}&q={{ busqueda }}{% endif %}" class="filter-tab-pill{% if filtro_tipo == 'ley' %} is-active{% endif %}" data-category="ley">
+        <span>Leyes Nacionales</span>
+        <span class="pill-count">{{ conteos.ley }}</span>
+      </a>
+      <a href="?tipo=norma{% if busqueda %}&q={{ busqueda }}{% endif %}" class="filter-tab-pill{% if filtro_tipo == 'norma' %} is-active{% endif %}" data-category="norma">
+        <span>Normas Generales DGII</span>
+        <span class="pill-count">{{ conteos.norma }}</span>
+      </a>
+      <a href="?tipo=estandar{% if busqueda %}&q={{ busqueda }}{% endif %}" class="filter-tab-pill{% if filtro_tipo == 'estandar' %} is-active{% endif %}" data-category="estandar">
+        <span>Estándares Técnicos</span>
+        <span class="pill-count">{{ conteos.estandar }}</span>
+      </a>
+      <a href="?tipo=decreto{% if busqueda %}&q={{ busqueda }}{% endif %}" class="filter-tab-pill{% if filtro_tipo == 'decreto' %} is-active{% endif %}" data-category="decreto">
+        <span>Decretos</span>
+        <span class="pill-count">{{ conteos.decreto }}</span>
+      </a>
+    </div>
+  </section>
+
+  {# LISTADO DE NORMATIVAS Y LEYES #}
+  <main class="legal-cards-grid" id="legal-items-container">
+    {% for n in normativas %}
+      <article class="legal-card card" data-id="{{ n.id }}" data-tipo="{{ n.tipo }}" id="{{ n.id }}">
+        
+        {# Cabecera de la Tarjeta #}
+        <header class="legal-card-header">
+          <div class="legal-card-badge-row">
+            <span class="badge {{ n.badge_class }}">{{ n.tipo_badge }}</span>
+            <span class="legal-card-date text-muted">{{ n.fecha }}</span>
+          </div>
+          <h3 class="legal-card-code">{{ n.codigo }}</h3>
+          <h4 class="legal-card-title">{{ n.titulo }}</h4>
+          <div class="legal-card-meta">
+            <span class="meta-item">
+              <svg class="icon icon-xs text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+              </svg>
+              <span>{{ n.organismo }}</span>
+            </span>
+            <span class="meta-dot">·</span>
+            <span class="meta-item text-success font-semibold">
+              <span class="status-indicator-dot"></span>
+              <span>{{ n.vigencia }}</span>
+            </span>
+          </div>
+        </header>
+
+        {# Resumen General #}
+        <div class="legal-card-body">
+          <p class="legal-resumen-text">
+            {{ n.resumen }}
+          </p>
+
+          {# Artículos y Puntos Clave #}
+          <div class="legal-articles-section">
+            <h5 class="section-micro-heading">ARTÍCULOS Y PUNTOS CLAVE APLICABLES</h5>
+            <div class="articles-list">
+              {% for art in n.articulos_clave %}
+                <div class="article-item">
+                  <div class="article-header">
+                    <strong class="article-tag code-font">{{ art.articulo }}</strong>
+                    <span class="article-title">{{ art.titulo }}</span>
+                  </div>
+                  <p class="article-desc text-muted">{{ art.desc }}</p>
+                </div>
+              {% endfor %}
+            </div>
+          </div>
+
+          {# Impacto Directo en el Sistema #}
+          <div class="legal-system-impact">
+            <div class="impact-header">
+              <svg class="icon icon-xs text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+              </svg>
+              <strong>Sustento e Implementación en el Software:</strong>
+            </div>
+            <p class="impact-text">{{ n.impacto_sistema }}</p>
+          </div>
+        </div>
+
+        {# Pie de Tarjeta con Enlace Oficial #}
+        <footer class="legal-card-footer">
+          <a href="{{ n.enlace_oficial }}" target="_blank" rel="noopener noreferrer" class="btn btn-outline btn-sm legal-external-link">
+            <span>Consultar Documento Oficial</span>
+            <svg class="icon icon-xs" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+            </svg>
+          </a>
+        </footer>
+
+      </article>
+    {% empty %}
+      <div class="card empty-search-card">
+        <svg class="icon icon-lg text-muted mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <h3>No se encontraron normativas con ese criterio</h3>
+        <p class="text-muted">Prueba con palabras como "32-23", "ITBIS", "e-NCF", "firma" o limpia el buscador.</p>
+        <a href="{% url 'core:marco_legal' %}" class="btn btn-outline btn-sm mt-3">Restablecer filtros</a>
+      </div>
+    {% endfor %}
+  </main>
+
+  {# MATRIZ DE CUMPLIMIENTO TÉCNICO Y NORMATIVO #}
+  <section class="compliance-matrix-card card" aria-label="Matriz de correspondencia funcional y legal">
+    <header class="matrix-header">
+      <div class="matrix-header-title">
+        <div class="matrix-badge-icon">
+          <svg class="icon icon-sm text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+          </svg>
+        </div>
+        <div>
+          <h3 class="matrix-title">Matriz de Cumplimiento Técnico-Legal</h3>
+          <p class="matrix-subtitle text-muted">Correspondencia entre cada módulo del software y las disposiciones normativas dominicanas</p>
+        </div>
+      </div>
+      <span class="badge badge-success">Conformidad e-CF v1.0</span>
+    </header>
+
+    <div class="table-responsive">
+      <table class="compliance-table">
+        <thead>
+          <tr>
+            <th scope="col">MÓDULO / COMPONENTE</th>
+            <th scope="col">BASE JURÍDICA</th>
+            <th scope="col">DISPOSICIÓN TÉCNICA OBLIGATORIA</th>
+            <th scope="col">ESTADO EN EL SISTEMA</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Nomenclatura e-NCF</strong></td>
+            <td>Norma General 06-2023 (Art. 4)</td>
+            <td>Formato alfanumérico estricto de 13 posiciones: <code>E + Tipo(2) + Secuencia(10)</code></td>
+            <td><span class="compliance-tag tag-success">✔ Validado en Wizard</span></td>
+          </tr>
+          <tr>
+            <td><strong>Firma Digital XML-DSig</strong></td>
+            <td>Ley 126-02 / Estándar e-CF v1.0</td>
+            <td>Firma digital enveloped RSA-SHA256 con certificado cualificado emitido en Rep. Dominicana</td>
+            <td><span class="compliance-tag tag-success">✔ Conforme a W3C</span></td>
+          </tr>
+          <tr>
+            <td><strong>Representación Impresa (PDF)</strong></td>
+            <td>Norma General 06-2018 (Arts. 5, 8, 11)</td>
+            <td>Recuadro fiscal superior derecho, código de seguridad visible (6 chars) y código QR oficial</td>
+            <td><span class="compliance-tag tag-success">✔ Plantilla UI-17</span></td>
+          </tr>
+          <tr>
+            <td><strong>Cálculo de ITBIS y Desglose</strong></td>
+            <td>Ley 11-92 (Título III) / Ley 253-12</td>
+            <td>Discriminación de base gravada, ITBIS alícuota general 18% y reducida 16%, exentos</td>
+            <td><span class="compliance-tag tag-success">✔ Motor de Totales</span></td>
+          </tr>
+          <tr>
+            <td><strong>Trazabilidad y Logs</strong></td>
+            <td>Ley 32-23 (Art. 12) / Norma 06-2023</td>
+            <td>Conservación de eventos, TrackID, marcas de tiempo milimétricas y no repudio</td>
+            <td><span class="compliance-tag tag-success">✔ Módulo UI-19</span></td>
+          </tr>
+          <tr>
+            <td><strong>Validación Previa (Pre-vuelo)</strong></td>
+            <td>Estándar e-CF v1.0 (Reglas RN)</td>
+            <td>Comprobación de consistencia fiscal (RN-01 a RN-48) previa al despacho a la DGII</td>
+            <td><span class="compliance-tag tag-success">✔ Consola UI-12</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+</div>
+{% endblock %}

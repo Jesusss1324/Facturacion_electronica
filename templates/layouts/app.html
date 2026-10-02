@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+{% block body %}
+<div class="app-shell">
+  {% include 'includes/sidebar.html' %}
+  <button class="nav-backdrop" type="button" aria-label="Cerrar navegación" data-nav-close hidden></button>
+  <div class="app-main">
+    {% include 'includes/topbar.html' %}
+    <main class="page-content" id="main-content" tabindex="-1">
+      {% block messages %}{% include 'includes/messages.html' %}{% endblock %}
+      {% block page_header %}
+      <header class="page-header">
+        <div>
+          <p class="eyebrow">{% if active_section == 'emision' %}Nueva factura{% else %}Facturación Electrónica{% endif %}</p>
+          <h1>{% block page_title %}{{ screen.title }}{% endblock %}</h1>
+          {% block page_description %}{% endblock %}
+        </div>
+        <div class="page-actions">{% block page_actions %}{% endblock %}</div>
+      </header>
+      {% endblock %}
+      {% block before_content %}{% endblock %}
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+</div>
+{% endblock %}

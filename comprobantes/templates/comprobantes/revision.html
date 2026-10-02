@@ -1,0 +1,486 @@
+{% extends 'layouts/app.html' %}
+{% load static ui_format %}
+
+{% block extra_css %}
+  <link rel="stylesheet" href="{% static 'css/pages/comprobante-revision.css' %}">
+{% endblock %}
+
+{% block extra_js %}
+  <script src="{% static 'js/pages/comprobante-revision.js' %}" defer></script>
+{% endblock %}
+
+{% block page_header %}
+  <div class="page-header revision-page-header">
+    <div class="page-header-text">
+      <div class="page-header-title-row">
+        <h1 class="page-title">Inspección de Pliego Fiscal e-CF</h1>
+        <span class="badge badge-primary-subtle">REPRESENTACIÓN IMPRESA OFICIAL</span>
+      </div>
+      <p class="page-description text-muted">
+        Previsualización idéntica al documento reglamentario de la DGII bajo Norma General 06-2018 y Ley 32-23.
+      </p>
+    </div>
+    <div class="page-actions">
+      <button type="button" class="btn btn-outline btn-sm" id="btn-imprimir" title="Imprimir o generar PDF preliminar">
+        <svg class="icon icon-sm" aria-hidden="true" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+        </svg>
+        Imprimir / PDF
+      </button>
+      <button type="button" class="btn btn-outline btn-sm" id="btn-escala" title="Ajustar visualización">
+        <svg class="icon icon-sm" aria-hidden="true" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+        </svg>
+        100% Escala
+      </button>
+    </div>
+  </div>
+{% endblock %}
+
+{% block before_content %}
+  {% include 'includes/invoice_steps.html' %}
+{% endblock %}
+
+{% block content %}
+<div class="revision-layout">
+  {# Columna Principal: Pliego / Factura Impresa #}
+  <main class="revision-main-sheet card" id="factura-pliego-impreso">
+    <div class="invoice-watermark" aria-hidden="true">BORRADOR PRE-TIMBRADO</div>
+
+    {# Cabecera: Emisor a la izquierda y Datos Fiscales e-NCF a la derecha #}
+    <header class="invoice-sheet-header">
+      <div class="emisor-section">
+        <div class="emisor-rnc-badge">
+          <span class="rnc-label">RNC</span>
+          <span class="rnc-value">{{ emisor.rnc }}</span>
+          <span class="badge badge-success-subtle">{{ emisor.autorizacion }}</span>
+        </div>
+        <h2 class="emisor-name">{{ emisor.razon_social }}</h2>
+        <p class="emisor-address">{{ emisor.direccion }}</p>
+        <p class="emisor-contact">Tel: {{ emisor.telefono }} · {{ emisor.email }}</p>
+        <p class="emisor-activity">Actividad: {{ emisor.actividad }}</p>
+      </div>
+
+      <div class="ecf-box">
+        <div class="ecf-box-inner">
+          <p class="ecf-box-sub">FACTURA ELECTRÓNICA DGII</p>
+          <h3 class="ecf-box-title">{{ tipo_display|upper }}</h3>
+          <div class="ecf-box-grid">
+            <span class="ecf-meta-label">TIPO e-CF:</span>
+            <span class="ecf-meta-value code-font">{{ codigo_tipo }}</span>
+
+            <span class="ecf-meta-label">e-NCF:</span>
+            <span class="ecf-meta-value code-font bold-encf">{{ secuencia_encf }}</span>
+
+            <span class="ecf-meta-label">Vencimiento Sec.:</span>
+            <span class="ecf-meta-value">{{ fecha_vencimiento_display }}</span>
+
+            <span class="ecf-meta-label">Fecha Emisión:</span>
+            <span class="ecf-meta-value">{{ fecha_emision_display }}</span>
+          </div>
+          <a href="{% url 'comprobantes:tipo' %}?borrador={{ borrador.id }}" class="btn-edit-shortcut" title="Editar tipo de comprobante">
+            <svg class="icon icon-xs" aria-hidden="true" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+            </svg>
+            Editar Tipo
+          </a>
+        </div>
+      </div>
+    </header>
+
+    <hr class="sheet-divider">
+
+    {# Bloque Receptor y Condiciones de Venta #}
+    <section class="invoice-party-section">
+      <div class="receptor-col">
+        <div class="section-title-row">
+          <h4 class="sheet-section-title">INFORMACIÓN DEL RECEPTOR (COMPRADOR)</h4>
+          <a href="{% url 'comprobantes:cliente' borrador_id=borrador.id %}" class="btn-edit-text" title="Cambiar cliente receptor">Editar</a>
+        </div>
+        <div class="receptor-content">
+          <p class="receptor-name"><strong>{{ cliente.nombre }}</strong></p>
+          <p class="receptor-meta">
+            <span class="text-muted">{{ cliente.tipo_identificacion }} Receptor:</span>
+            <strong class="code-font">{{ cliente.identificacion_display }}</strong>
+            <span class="badge badge-success-subtle">● Activo DGII</span>
+          </p>
+          <p class="receptor-meta">
+            <span class="text-muted">Domicilio:</span> {{ cliente.direccion }}
+          </p>
+          <p class="receptor-meta">
+            <span class="text-muted">Contacto:</span> {{ cliente.telefono }} · {{ cliente.email }}
+          </p>
+        </div>
+      </div>
+
+      <div class="conditions-col">
+        <div class="section-title-row">
+          <h4 class="sheet-section-title">CONDICIONES DE VENTA</h4>
+          <a href="{% url 'comprobantes:datos' borrador_id=borrador.id %}" class="btn-edit-text" title="Editar condiciones generales">Editar</a>
+        </div>
+        <div class="conditions-grid">
+          <span class="cond-label">Término de Pago:</span>
+          <span class="cond-value"><strong>{{ borrador.tipo_pago_display }}</strong>{% if borrador.termino_pago %} ({{ borrador.termino_pago }}){% endif %}</span>
+
+          <span class="cond-label">Forma de Pago:</span>
+          <span class="cond-value">{{ borrador.forma_pago_display }}</span>
+
+          <span class="cond-label">Tipo de Ingreso:</span>
+          <span class="cond-value">{{ borrador.tipo_ingreso_display }}</span>
+
+          <span class="cond-label">Moneda / Tasa:</span>
+          <span class="cond-value"><strong>DOP (RD$)</strong> · Tasa: 1.00</span>
+        </div>
+      </div>
+    </section>
+
+    {# Tabla de Ítems / Bienes y Servicios #}
+    <section class="invoice-items-section">
+      <div class="items-header-bar">
+        <div class="items-header-title">
+          <h4 class="sheet-section-title mb-0">DETALLE DE BIENES Y/O SERVICIOS FACTURADOS</h4>
+          <span class="badge badge-neutral">{{ borrador.lineas|length }} Ítems Verificados</span>
+        </div>
+        <a href="{% url 'comprobantes:items' borrador_id=borrador.id %}" class="btn btn-outline btn-sm btn-edit-lines">
+          <svg class="icon icon-xs" aria-hidden="true" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+          </svg>
+          Editar Líneas de Concepto
+        </a>
+      </div>
+
+      <div class="table-responsive">
+        <table class="invoice-table">
+          <thead>
+            <tr>
+              <th scope="col" class="th-num">#</th>
+              <th scope="col" class="th-desc">DESCRIPCIÓN DEL ÍTEM O SERVICIO</th>
+              <th scope="col" class="th-cant text-right">CANT.</th>
+              <th scope="col" class="th-precio text-right">PRECIO UNIT.</th>
+              <th scope="col" class="th-desc-monto text-right">DESC.</th>
+              <th scope="col" class="th-itbis text-right">ITBIS (18%)</th>
+              <th scope="col" class="th-neto text-right">IMPORTE NETO</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for linea in borrador.lineas %}
+            <tr>
+              <td class="text-muted">{{ forloop.counter }}</td>
+              <td>
+                <div class="item-title"><strong>{{ linea.concepto }}</strong></div>
+                <div class="item-subtitle text-muted">
+                  <span class="badge badge-light-subtle">{{ linea.tipo_display }}</span>
+                  {% if linea.descripcion %}{{ linea.descripcion }}{% endif %}
+                </div>
+              </td>
+              <td class="text-right code-font">{{ linea.cantidad|numero_decimal }} <small class="text-muted">{{ linea.unidad }}</small></td>
+              <td class="text-right code-font">{{ linea.precio|numero_decimal }}</td>
+              <td class="text-right code-font">
+                {% if linea.descuento > 0 %}
+                  <span class="text-danger">-{{ linea.descuento|numero_decimal }}</span>
+                {% else %}
+                  <span class="text-muted">0.00</span>
+                {% endif %}
+              </td>
+              <td class="text-right code-font">{{ linea.itbis|numero_decimal }}</td>
+              <td class="text-right code-font"><strong>{{ linea.total|numero_decimal }}</strong></td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    {# Pie Fiscal y Totales Consolidados #}
+    <footer class="invoice-sheet-footer">
+      <div class="footer-legal-col">
+        <div class="qr-preview-box">
+          <div class="qr-code-graphic" aria-label="Código QR de validación fiscal e-CF">
+            {# Representación gráfica decorativa de QR e-CF #}
+            <svg viewBox="0 0 100 100" width="80" height="80" fill="currentColor">
+              <rect x="5" y="5" width="28" height="28" rx="2" fill="none" stroke="currentColor" stroke-width="6"/>
+              <rect x="13" y="13" width="12" height="12"/>
+              <rect x="67" y="5" width="28" height="28" rx="2" fill="none" stroke="currentColor" stroke-width="6"/>
+              <rect x="75" y="13" width="12" height="12"/>
+              <rect x="5" y="67" width="28" height="28" rx="2" fill="none" stroke="currentColor" stroke-width="6"/>
+              <rect x="13" y="75" width="12" height="12"/>
+              <rect x="42" y="10" width="8" height="8"/>
+              <rect x="52" y="24" width="8" height="8"/>
+              <rect x="42" y="42" width="16" height="16"/>
+              <rect x="68" y="42" width="8" height="8"/>
+              <rect x="80" y="52" width="12" height="12"/>
+              <rect x="42" y="70" width="8" height="14"/>
+              <rect x="60" y="78" width="14" height="8"/>
+              <rect x="78" y="78" width="14" height="14"/>
+            </svg>
+          </div>
+          <div class="qr-instructions">
+            <p class="legal-cite">Conforme a Ley 253-12 y Norma General 06-2018 DGII.</p>
+            <p class="legal-desc">El código QR definitivo y la firma digital XML-DSig se estamparán tras la autorización formal del servicio de facturación e-CF.</p>
+            <p class="legal-hash">
+              <span class="text-muted">Hash SHA-256:</span>
+              <code class="code-font">{{ huella_corta }}</code>
+            </p>
+          </div>
+        </div>
+        <p class="legal-disclaimer">
+          *Este documento es una representación impresa preliminar de un Comprobante Fiscal Electrónico (e-CF) generado en el sistema de facturación electrónica.
+        </p>
+      </div>
+
+      <div class="footer-totals-col">
+        <div class="totals-breakdown-card">
+          <div class="total-row">
+            <span class="total-label">Monto Subtotal Gravado:</span>
+            <span class="total-value code-font">{{ resumen.bruto|moneda_rd }}</span>
+          </div>
+          <div class="total-row">
+            <span class="total-label">Descuento Total en Líneas:</span>
+            <span class="total-value code-font {% if resumen.descuento > 0 %}text-danger{% endif %}">
+              {% if resumen.descuento > 0 %}− {{ resumen.descuento|moneda_rd }}{% else %}RD$ 0.00{% endif %}
+            </span>
+          </div>
+          <div class="total-row">
+            <span class="total-label">Subtotal Neto Imponible:</span>
+            <span class="total-value code-font"><strong>{{ resumen.base|moneda_rd }}</strong></span>
+          </div>
+          <div class="total-row">
+            <span class="total-label">ITBIS Facturado (18% Tasa General):</span>
+            <span class="total-value code-font">{{ resumen.itbis|moneda_rd }}</span>
+          </div>
+          <div class="total-row">
+            <span class="total-label">Monto Exento de Impuestos:</span>
+            <span class="total-value code-font text-muted">RD$ 0.00</span>
+          </div>
+        </div>
+
+        {# Highlight Box Total a Pagar #}
+        <div class="grand-total-box">
+          <div class="grand-total-header">
+            <span class="grand-total-title">TOTAL GENERAL A PAGAR</span>
+            <span class="grand-total-currency">Moneda de Curso Legal (DOP)</span>
+          </div>
+          <div class="grand-total-amount">
+            <span class="currency-symbol">RD$</span>
+            <span class="currency-number">{{ resumen.total|numero_decimal }}</span>
+          </div>
+          <p class="grand-total-words">{{ monto_letras }}</p>
+        </div>
+      </div>
+    </footer>
+  </main>
+
+  {# Columna Lateral: Fiscal Dispatch Command / Control de Emisión #}
+  <aside class="revision-control-aside">
+    <div class="dispatch-card card">
+      <div class="dispatch-header">
+        <div class="dispatch-header-title">
+          <div class="dispatch-icon-badge">
+            <svg class="icon icon-md" aria-hidden="true" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+            </svg>
+          </div>
+          <div>
+            <h3 class="dispatch-title">Fiscal Dispatch Command</h3>
+            <p class="dispatch-subtitle">Consola de Pre-Vuelo &amp; Timbrado</p>
+          </div>
+        </div>
+        <span class="badge badge-success">● Listo para Emisión</span>
+      </div>
+
+      {# Checklist Fiscal (1 al 6) #}
+      <div class="checklist-section">
+        <h4 class="checklist-heading">CHECKLIST FISCAL (PASO 1 AL 6)</h4>
+        <ul class="checklist-list" role="list">
+          {% for item in checklist %}
+          <li class="checklist-item">
+            <div class="checklist-item-icon" aria-hidden="true">
+              <svg class="icon icon-xs text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <div class="checklist-item-content">
+              <span class="checklist-num">{{ item.num }}.</span>
+              <span class="checklist-title">{{ item.titulo }}</span>
+            </div>
+            <span class="checklist-value">{{ item.valor }}</span>
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+
+      {# Telemetría de Red Fiscal #}
+      <div class="telemetry-box">
+        <div class="telemetry-header">
+          <span class="telemetry-label">TELEMETRÍA DE RED FISCAL</span>
+          <span class="telemetry-status">● 35ms Latencia</span>
+        </div>
+        <div class="telemetry-body code-font">
+          <div><span class="telemetry-key">ENDPOINT:</span> POST /fe/recepcion/v1/ecf</div>
+          <div><span class="telemetry-key">SCHEMA:</span> {{ schema_name }}</div>
+          <div><span class="telemetry-key">SIGNING:</span> XML-DSig Enveloped (SHA-256)</div>
+        </div>
+      </div>
+
+      {# Botón Principal de Emisión #}
+      <div class="dispatch-actions">
+        <button type="button" class="btn btn-primary btn-lg w-100 btn-authorize-dispatch" id="btn-abrir-emision">
+          <svg class="icon icon-sm" aria-hidden="true" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          Autorizar Emisión &amp; Timbrar
+        </button>
+
+        {# Acciones Secundarias #}
+        <div class="secondary-actions-row">
+          <form method="post" action="{% url 'comprobantes:revision' borrador_id=borrador.id %}" class="flex-1">
+            {% csrf_token %}
+            <input type="hidden" name="accion" value="guardar">
+            <button type="submit" class="btn btn-outline w-100 btn-secondary-dispatch" title="Guardar cambios del borrador">
+              <svg class="icon icon-xs" aria-hidden="true" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+              </svg>
+              Guardar Borrador
+            </button>
+          </form>
+
+          <button type="button" class="btn btn-outline flex-1 btn-secondary-dispatch" id="btn-abrir-xml" title="Inspeccionar archivo XML generado">
+            <svg class="icon icon-xs" aria-hidden="true" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+            </svg>
+            Ver XML Crudo
+          </button>
+        </div>
+      </div>
+
+      {# Nota Informativa del Procedimiento Técnico #}
+      <div class="technical-notice">
+        <div class="technical-notice-header">
+          <svg class="icon icon-xs" aria-hidden="true" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <strong>Aspecto Técnico de la Emisión</strong>
+        </div>
+        <p class="technical-notice-text">
+          Al pulsar "Autorizar Emisión", el sistema compilará el XML nativo, generará la firma electrónica enveloped bajo el estándar XML-DSig, validará las reglas fiscales del e-NCF y enviará la transacción al endpoint de recepción fiscal.
+        </p>
+      </div>
+    </div>
+  </aside>
+</div>
+
+{# Barra de Navegación Inferior #}
+<div class="revision-bottom-nav">
+  <a href="{% url 'comprobantes:totales' borrador_id=borrador.id %}" class="btn btn-link btn-back-step">
+    ← Volver al Paso 5 (Totales y condiciones)
+  </a>
+  <span class="draft-internal-id text-muted code-font">
+    Identificador interno de borrador: DRAFT-ECF-{{ borrador.id|stringformat:"s"|slice:":8" }}
+  </span>
+</div>
+
+{# MODAL 1: Confirmación de Emisión y Timbrado #}
+<div class="modal-backdrop" id="modal-confirmar-emision" role="dialog" aria-modal="true" aria-labelledby="modal-emision-title" hidden>
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="modal-header-icon-badge">
+          <svg class="icon icon-md" aria-hidden="true" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+          </svg>
+        </div>
+        <div class="modal-header-title-box">
+          <h3 class="modal-title" id="modal-emision-title">¿Confirmas la Emisión y Timbrado?</h3>
+          <p class="modal-subtitle">Acción formal de transmisión en el registro fiscal e-CF</p>
+        </div>
+        <button type="button" class="btn-close-modal" id="btn-cerrar-modal-x" aria-label="Cerrar modal">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <p class="modal-lead-text">
+          Estás a punto de timbrar y transmitir formalmente el comprobante <strong>{{ secuencia_encf }}</strong> para <strong>{{ cliente.nombre }}</strong> por un valor total de:
+        </p>
+
+        {# Callout Monto Liquidado #}
+        <div class="modal-amount-callout">
+          <div class="modal-amount-header">
+            <span>MONTO LIQUIDADO</span>
+            <span class="code-font">DOP</span>
+          </div>
+          <div class="modal-amount-value code-font">
+            {{ resumen.total|moneda_rd }}
+          </div>
+        </div>
+
+        {# Tarjeta resumen de datos #}
+        <div class="modal-meta-box">
+          <div class="modal-meta-row">
+            <span class="text-muted">Tipo Comprobante:</span>
+            <strong class="code-font">{{ codigo_tipo }} {{ tipo_display }}</strong>
+          </div>
+          <div class="modal-meta-row">
+            <span class="text-muted">{{ cliente.tipo_identificacion }} Receptor:</span>
+            <strong class="code-font">{{ cliente.identificacion_display }}</strong>
+          </div>
+          <div class="modal-meta-row">
+            <span class="text-muted">ITBIS Computado:</span>
+            <strong class="code-font">{{ resumen.itbis|moneda_rd }} (18%)</strong>
+          </div>
+          <div class="modal-meta-row">
+            <span class="text-muted">Servidor Destino:</span>
+            <span class="text-success font-semibold">DGII e-CF Ambiente de Producción / Homologación</span>
+          </div>
+        </div>
+
+        {# Garantía Criptográfica #}
+        <div class="modal-security-badge">
+          <svg class="icon icon-sm text-success flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+          </svg>
+          <div class="security-text">
+            <strong>Garantía Criptográfica:</strong> Se aplicará la firma XML-DSig con el certificado digital correspondiente y el motor generará un código de autorización TrackID único.
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" id="btn-cerrar-modal-cancelar">Seguir revisando</button>
+        <form method="post" action="{% url 'comprobantes:emitir' borrador_id=borrador.id %}" class="d-inline">
+          {% csrf_token %}
+          <input type="hidden" name="huella" value="{{ huella }}">
+          <button type="submit" class="btn btn-primary" id="btn-confirmar-emision-submit">
+            Sí, emitir y timbrar
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+{# MODAL 2: Visor de XML Crudo #}
+<div class="modal-backdrop" id="modal-xml-crudo" role="dialog" aria-modal="true" aria-labelledby="modal-xml-title" hidden>
+  <div class="modal-dialog modal-dialog-lg modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="modal-header-title-box">
+          <h3 class="modal-title" id="modal-xml-title">Vista Previa XML e-CF (Estándar DGII)</h3>
+          <p class="modal-subtitle">Estructura sintáctica representativa antes del sellado con firma digital</p>
+        </div>
+        <button type="button" class="btn-close-modal" id="btn-cerrar-xml-x" aria-label="Cerrar modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <pre class="xml-preview-container"><code class="xml-code code-font" id="xml-code-content">{{ xml_raw }}</code></pre>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" id="btn-copiar-xml">
+          <svg class="icon icon-xs" aria-hidden="true" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+          </svg>
+          <span id="btn-copiar-texto">Copiar XML</span>
+        </button>
+        <button type="button" class="btn btn-primary" id="btn-cerrar-xml-btn">Cerrar</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -15,8 +15,21 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path
+from django.urls import include, path
+
+from django.views.generic import RedirectView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('acceso/', include('usuarios.urls')),
+    path('clientes/', include('clientes.urls')),
+    path('facturas/', include('comprobantes.urls')),
+    path('bitacora/', include('bitacora.urls')),
+    path('logs/', RedirectView.as_view(pattern_name='bitacora:listado', permanent=False)),
+    path('', include('core.urls')),
 ]
+
+handler400 = 'core.views.bad_request'
+handler403 = 'core.views.permission_denied'
+handler404 = 'core.views.page_not_found'
+handler500 = 'core.views.server_error'

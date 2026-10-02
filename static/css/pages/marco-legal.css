@@ -1,0 +1,574 @@
+/*
+ * Estilos específicos para la pantalla de Marco Legal y Normativo (UI-20).
+ * Basado en el sistema de diseño oficial con soporte para Plus Jakarta Sans.
+ */
+
+@layer components {
+  .legal-page-container {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-6);
+  }
+
+  /* Encabezado */
+  .legal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: var(--space-4);
+  }
+
+  .legal-header-meta {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    max-width: 54rem;
+  }
+
+  .legal-category-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: var(--font-size-xs);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--color-muted);
+  }
+
+  .legal-category-pill .dot-sep {
+    color: var(--color-border);
+  }
+
+  .legal-title {
+    font-size: var(--font-size-2xl);
+    font-weight: 800;
+    color: var(--color-primary);
+    margin: 0;
+    letter-spacing: -0.02em;
+  }
+
+  .legal-subtitle {
+    font-size: var(--font-size-sm);
+    color: var(--color-muted);
+    margin: 0;
+    line-height: 1.5;
+  }
+
+  .legal-header-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    flex-wrap: wrap;
+  }
+
+  /* Banner Principal / Hero de Certeza Jurídica */
+  .legal-hero-card {
+    background: linear-gradient(135deg, #082b53 0%, #0f3d73 100%);
+    color: #ffffff;
+    border-radius: var(--radius-lg);
+    padding: var(--space-6);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--space-6);
+    box-shadow: 0 4px 14px rgba(8, 43, 83, 0.15);
+  }
+
+  .hero-left {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-4);
+    max-width: 52rem;
+  }
+
+  .hero-icon-box {
+    width: 3rem;
+    height: 3rem;
+    border-radius: var(--radius-md);
+    background: rgba(255, 255, 255, 0.12);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    color: #38bdf8;
+  }
+
+  .hero-title {
+    font-size: 1.15rem;
+    font-weight: 800;
+    margin: 0 0 var(--space-2) 0;
+    color: #ffffff;
+    letter-spacing: -0.01em;
+  }
+
+  .hero-desc {
+    font-size: var(--font-size-xs);
+    color: #cbd5e1;
+    margin: 0;
+    line-height: 1.55;
+  }
+
+  .hero-desc strong {
+    color: #ffffff;
+  }
+
+  .hero-metrics {
+    display: flex;
+    align-items: center;
+    gap: var(--space-5);
+    background: rgba(0, 0, 0, 0.18);
+    padding: var(--space-4) var(--space-5);
+    border-radius: var(--radius-md);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .metric-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .metric-num {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: #38bdf8;
+    line-height: 1.2;
+    font-family: var(--font-mono);
+  }
+
+  .metric-label {
+    font-size: 0.68rem;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-top: 2px;
+  }
+
+  .metric-divider {
+    width: 1px;
+    height: 2rem;
+    background: rgba(255, 255, 255, 0.15);
+  }
+
+  /* Barra de Búsqueda y Filtros */
+  .legal-toolbar-card {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: var(--space-4);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    box-shadow: var(--shadow-card);
+  }
+
+  .toolbar-search-wrapper {
+    position: relative;
+    width: 100%;
+  }
+
+  .search-icon {
+    position: absolute;
+    left: var(--space-3);
+    top: 50%;
+    transform: translateY(-50%);
+    width: 1.1rem;
+    height: 1.1rem;
+    color: var(--color-muted);
+    pointer-events: none;
+  }
+
+  .legal-search-input {
+    width: 100%;
+    height: 2.75rem;
+    padding: 0 var(--space-8) 0 2.5rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    font-size: var(--font-size-sm);
+    background: var(--color-background);
+    color: var(--color-text);
+    transition: all 0.15s ease;
+  }
+
+  .legal-search-input:focus {
+    background: #ffffff;
+    border-color: var(--color-focus);
+    box-shadow: 0 0 0 3px rgba(43, 112, 211, 0.15);
+  }
+
+  .clear-search-btn {
+    position: absolute;
+    right: var(--space-3);
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: var(--color-muted);
+    font-size: 1.25rem;
+    line-height: 1;
+    cursor: pointer;
+    padding: 2px;
+  }
+
+  .clear-search-btn:hover {
+    color: var(--color-text);
+  }
+
+  .toolbar-filters-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+  }
+
+  .filter-tab-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0.35rem 0.85rem;
+    font-size: var(--font-size-xs);
+    font-weight: 600;
+    color: var(--color-muted);
+    background: #f1f5f9;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-pill);
+    text-decoration: none;
+    transition: all 0.15s ease;
+  }
+
+  .filter-tab-pill:hover {
+    color: var(--color-primary);
+    background: #e2e8f0;
+  }
+
+  .filter-tab-pill.is-active {
+    background: var(--color-primary);
+    border-color: var(--color-primary);
+    color: #ffffff;
+  }
+
+  .filter-tab-pill.is-active .pill-count {
+    background: rgba(255, 255, 255, 0.25);
+    color: #ffffff;
+  }
+
+  .pill-count {
+    font-size: 0.68rem;
+    font-weight: 700;
+    background: #cbd5e1;
+    color: #334155;
+    padding: 1px 6px;
+    border-radius: var(--radius-pill);
+    line-height: 1.2;
+  }
+
+  /* Grid de Tarjetas Legales */
+  .legal-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(28rem, 1fr));
+    gap: var(--space-5);
+  }
+
+  @media (max-width: 640px) {
+    .legal-cards-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .legal-card {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-card);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  .legal-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
+  }
+
+  .legal-card-header {
+    padding: var(--space-5) var(--space-5) var(--space-4) var(--space-5);
+    border-bottom: 1px solid var(--color-border);
+    background: #fafcff;
+  }
+
+  .legal-card-badge-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--space-2);
+  }
+
+  .legal-card-date {
+    font-size: var(--font-size-xs);
+  }
+
+  .legal-card-code {
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: var(--color-primary);
+    margin: 0 0 2px 0;
+  }
+
+  .legal-card-title {
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+    color: var(--color-text);
+    margin: 0 0 var(--space-3) 0;
+    line-height: 1.35;
+  }
+
+  .legal-card-meta {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: var(--font-size-xs);
+    color: var(--color-muted);
+  }
+
+  .meta-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .meta-dot {
+    color: var(--color-border);
+  }
+
+  .status-indicator-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background-color: #10b981;
+    display: inline-block;
+  }
+
+  .legal-card-body {
+    padding: var(--space-5);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    flex: 1;
+  }
+
+  .legal-resumen-text {
+    font-size: var(--font-size-xs);
+    color: #334155;
+    margin: 0;
+    line-height: 1.55;
+  }
+
+  .legal-articles-section {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+
+  .section-micro-heading {
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    color: var(--color-muted);
+    text-transform: uppercase;
+    margin: 0;
+  }
+
+  .articles-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .article-item {
+    background: #f8fafc;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    padding: 8px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .article-header {
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-2);
+  }
+
+  .article-tag {
+    font-size: 0.7rem;
+    color: var(--color-primary);
+    background: #e2e8f0;
+    padding: 1px 5px;
+    border-radius: 3px;
+  }
+
+  .article-title {
+    font-size: var(--font-size-xs);
+    font-weight: 600;
+    color: var(--color-text);
+  }
+
+  .article-desc {
+    font-size: 0.72rem;
+    margin: 0;
+    line-height: 1.4;
+  }
+
+  /* Sustento en el Software */
+  .legal-system-impact {
+    background: #edf5fd;
+    border: 1px solid #bfdbfe;
+    border-radius: var(--radius-sm);
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .impact-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: var(--font-size-xs);
+    color: var(--color-primary);
+  }
+
+  .impact-text {
+    font-size: 0.72rem;
+    color: #1e3a8a;
+    margin: 0;
+    line-height: 1.45;
+  }
+
+  .legal-card-footer {
+    padding: var(--space-3) var(--space-5);
+    background: #f8fafc;
+    border-top: 1px solid var(--color-border);
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  .legal-external-link {
+    font-size: var(--font-size-xs);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  /* Matriz de Cumplimiento Técnico */
+  .compliance-matrix-card {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    box-shadow: var(--shadow-card);
+  }
+
+  .matrix-header {
+    padding: var(--space-4) var(--space-5);
+    background: #fafcff;
+    border-bottom: 1px solid var(--color-border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+  }
+
+  .matrix-header-title {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+  }
+
+  .matrix-badge-icon {
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: var(--radius-md);
+    background: #eaf1ff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .matrix-title {
+    font-size: 1rem;
+    font-weight: 800;
+    color: var(--color-text);
+    margin: 0;
+  }
+
+  .matrix-subtitle {
+    font-size: var(--font-size-xs);
+    margin: 0;
+  }
+
+  .compliance-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: var(--font-size-xs);
+  }
+
+  .compliance-table th {
+    background: #f8fafc;
+    border-bottom: 2px solid var(--color-border);
+    padding: 10px 14px;
+    text-align: left;
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: var(--color-muted);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .compliance-table td {
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--color-border);
+    vertical-align: middle;
+  }
+
+  .compliance-table tr:last-child td {
+    border-bottom: none;
+  }
+
+  .compliance-table tbody tr:hover {
+    background-color: #f8fafc;
+  }
+
+  .compliance-tag {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 8px;
+    border-radius: var(--radius-pill);
+    font-weight: 600;
+    font-size: 0.7rem;
+    white-space: nowrap;
+  }
+
+  .tag-success {
+    background: #ecfdf5;
+    color: #065f46;
+    border: 1px solid #a7f3d0;
+  }
+
+  .empty-search-card {
+    grid-column: 1 / -1;
+    padding: var(--space-12) var(--space-6);
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+}

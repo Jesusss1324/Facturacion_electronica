@@ -1,0 +1,372 @@
+{% extends 'layouts/app.html' %}
+{% load static %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/pages/comprobante-datos.css' %}">
+{% endblock %}
+{% block extra_js %}
+<script src="{% static 'js/pages/comprobante-datos.js' %}" defer></script>
+{% endblock %}
+
+{% block before_content %}
+{% include 'includes/invoice_steps.html' %}
+{% endblock %}
+
+{% block page_header %}
+<div class="datos-page-header-wrapper">
+  <!-- Top Context Cards Row (Tipo e-CF & Cliente Receptor) -->
+  <div class="context-cards-row">
+    <!-- Left Context Card: Tipo e-CF -->
+    <div class="card context-card context-card-tipo">
+      <div class="context-card-main">
+        <span class="context-card-icon">
+          {% include 'includes/icon.html' with name='shield' %}
+        </span>
+        <div class="context-card-info">
+          <div class="context-badge-title">
+            <span class="badge badge-primary">E{{ borrador.tipo_ecf }}</span>
+            <strong>{{ tipo_display }}</strong>
+          </div>
+          <p class="context-card-desc">
+            {% if borrador.tipo_ecf == '31' %}
+            Deduce costos y gastos para fines de ISR e ITBIS
+            {% else %}
+            Comprobante para consumidor final sin crédito deducible
+            {% endif %}
+          </p>
+        </div>
+      </div>
+      <button type="button" class="btn btn-secondary btn-sm context-change-btn" data-open-type-modal>
+        {% include 'includes/icon.html' with name='edit' %} Cambiar
+      </button>
+    </div>
+
+    <!-- Right Context Card: Cliente Receptor -->
+    <div class="card context-card context-card-cliente">
+      <div class="context-card-main">
+        <span class="context-card-icon">
+          {% if cliente.tipo_identificacion == 'RNC' %}
+          {% include 'includes/icon.html' with name='invoices' %}
+          {% else %}
+          {% include 'includes/icon.html' with name='user' %}
+          {% endif %}
+        </span>
+        <div class="context-card-info">
+          <div class="context-badge-title">
+            <strong class="client-name-title">{{ cliente.nombre }}</strong>
+            {% if cliente.activo %}
+            <span class="badge badge-success">● {{ cliente.tipo_identificacion }} Activo</span>
+            {% else %}
+            <span class="badge badge-danger">● Inactivo</span>
+            {% endif %}
+          </div>
+          <p class="context-card-desc">
+            {{ cliente.tipo_identificacion }}: <span class="tabular-numbers">{{ cliente.identificacion_display }}</span> · {{ cliente.categoria_display }}
+          </p>
+        </div>
+      </div>
+      <a class="btn btn-secondary btn-sm context-change-btn" href="{% url 'comprobantes:cliente' borrador_id=borrador.id %}">
+        {% include 'includes/icon.html' with name='reset' %} Cambiar
+      </a>
+    </div>
+  </div>
+
+  <header class="datos-header">
+    <div class="header-titles">
+      <h1>Datos generales de la factura</h1>
+      <p class="text-muted header-description">
+        Completa la información operativa y condiciones comerciales antes de registrar los bienes o servicios.
+      </p>
+    </div>
+    <div class="header-meta-pill">
+      <span class="badge badge-info">ⓘ Paso 3 de 6 · Clasificación Comercial y Fiscal</span>
+    </div>
+  </header>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="datos-content-wrapper">
+  <form method="post" action="." novalidate data-datos-generales-form>
+    {% csrf_token %}
+
+    {% if form.non_field_errors %}
+    <div class="alert alert-danger general-error-summary">
+      <strong>Corrige los siguientes errores:</strong>
+      {{ form.non_field_errors }}
+    </div>
+    {% endif %}
+
+    <!-- 1. Información técnica del comprobante -->
+    <section class="card section-card">
+      <header class="section-card-header">
+        <div class="section-title-box">
+          <span class="section-step-num">1</span>
+          <div>
+            <h2>Información técnica del comprobante</h2>
+            <p class="text-muted text-xs">Secuencia y registro institucional garantizados por el esquema DGII</p>
+          </div>
+        </div>
+        <span class="tech-scheme-tag">&lt;&gt; e-CF v1.0 · UTF-8</span>
+      </header>
+
+      <div class="section-card-body">
+        <div class="form-grid-3">
+          <!-- Tipo de comprobante (Readonly) -->
+          <div class="form-field">
+            <label class="field-label" id="label-tipo-comprobante">Tipo de comprobante</label>
+            <div class="readonly-field-box">
+              <span class="field-icon">{% include 'includes/icon.html' with name='shield' %}</span>
+              <span class="field-value font-semibold">E{{ borrador.tipo_ecf }} — {{ tipo_display }}</span>
+            </div>
+            <p class="field-hint">Conforme a Norma General 06-2018</p>
+          </div>
+
+          <!-- Secuencia e-NCF (Readonly) -->
+          <div class="form-field">
+            <label class="field-label" id="label-secuencia-encf">Secuencia e-NCF</label>
+            <div class="readonly-field-box sequence-box">
+              <span class="field-icon">{% include 'includes/icon.html' with name='lock' %}</span>
+              <span class="field-value tabular-numbers font-semibold">{{ secuencia_encf }}</span>
+              <span class="badge badge-neutral auto-tag">AUTO TIMBRADO</span>
+            </div>
+            <p class="field-hint">Se reservará criptográficamente al emitir</p>
+          </div>
+
+          <!-- Fecha de emisión (Editable) -->
+          <div class="form-field">
+            <label for="{{ form.fecha_emision.id_for_label }}">
+              {{ form.fecha_emision.label }} <span class="text-danger">*</span>
+            </label>
+            <div class="input-with-icon">
+              {{ form.fecha_emision }}
+            </div>
+            <p class="field-hint">● Precargada con fecha fiscal actual</p>
+            {% for error in form.fecha_emision.errors %}
+            <p class="field-error">{{ error }}</p>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. Clasificación de la operación fiscal -->
+    <section class="card section-card">
+      <header class="section-card-header">
+        <div class="section-title-box">
+          <span class="section-step-num">2</span>
+          <div>
+            <h2>Clasificación de la operación fiscal</h2>
+            <p class="text-muted text-xs">Determina la imputación contable en los formatos 606 y 607 de la DGII</p>
+          </div>
+        </div>
+      </header>
+
+      <div class="section-card-body">
+        <div class="fiscal-classification-grid">
+          <div class="form-field fiscal-select-field">
+            <label for="{{ form.tipo_ingreso.id_for_label }}">
+              {{ form.tipo_ingreso.label }} <span class="text-danger">*</span>
+            </label>
+            {{ form.tipo_ingreso }}
+            <p class="field-hint">Aplica para facturación regular de productos o servicios del giro habitual.</p>
+            {% for error in form.tipo_ingreso.errors %}
+            <p class="field-error">{{ error }}</p>
+            {% endfor %}
+          </div>
+
+          <div class="fiscal-tip-card">
+            <div class="fiscal-tip-header">
+              <span class="fiscal-tip-icon">{% include 'includes/icon.html' with name='activity' %}</span>
+              <strong>Nota de imputación fiscal</strong>
+            </div>
+            <p class="fiscal-tip-text">
+              El tipo de ingreso <strong>"01"</strong> es el más común en actividades mercantiles. Vincula directamente el débito fiscal en la declaración mensual IT-1 y el reporte 607.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. Condiciones y modalidad de pago -->
+    <section class="card section-card">
+      <header class="section-card-header">
+        <div class="section-title-box">
+          <span class="section-step-num">3</span>
+          <div>
+            <h2>Condiciones y modalidad de pago</h2>
+            <p class="text-muted text-xs">Establece el esquema crediticio y medio de liquidación comercial</p>
+          </div>
+        </div>
+      </header>
+
+      <div class="section-card-body">
+        <!-- Selector interactivo de tipo de pago -->
+        <div class="form-field">
+          <label class="field-label" id="label-tipo-pago">Tipo o condición de pago <span class="text-danger">*</span></label>
+          <div class="payment-options-grid" role="radiogroup" aria-labelledby="label-tipo-pago">
+            {% for radio in form.tipo_pago %}
+            <label class="payment-option-card" data-payment-card data-value="{{ radio.data.value }}">
+              {{ radio.tag }}
+              <div class="payment-card-content">
+                <span class="payment-card-icon">
+                  {% if radio.data.value == 'contado' %}
+                  {% include 'includes/icon.html' with name='invoices' %}
+                  {% elif radio.data.value == 'credito' %}
+                  {% include 'includes/icon.html' with name='clock' %}
+                  {% else %}
+                  {% include 'includes/icon.html' with name='check-circle' %}
+                  {% endif %}
+                </span>
+                <div class="payment-card-texts">
+                  <strong>{{ radio.choice_label }}</strong>
+                  <span class="payment-card-desc">
+                    {% if radio.data.value == 'contado' %}
+                    Pago inmediato al emitir
+                    {% elif radio.data.value == 'credito' %}
+                    Plazo y vencimiento diferido
+                    {% else %}
+                    Muestra o bonificación
+                    {% endif %}
+                  </span>
+                </div>
+              </div>
+              <span class="payment-card-radio-circle"></span>
+            </label>
+            {% endfor %}
+          </div>
+          {% for error in form.tipo_pago.errors %}
+          <p class="field-error">{{ error }}</p>
+          {% endfor %}
+        </div>
+
+        <!-- Conditional Panel 1: Contado -->
+        <div class="conditional-payment-panel" id="panel-contado">
+          <div class="alert alert-info payment-callout">
+            {% include 'includes/icon.html' with name='check-circle' %}
+            <p>
+              La factura se cancela en una única exhibición al momento de la entrega o prestación del servicio. No se requiere fecha de vencimiento fiscal.
+            </p>
+          </div>
+        </div>
+
+        <!-- Conditional Panel 2: Crédito -->
+        <div class="conditional-payment-panel" id="panel-credito" hidden>
+          <div class="commercial-expiry-box">
+            <header class="expiry-box-header">
+              <div class="expiry-title">
+                {% include 'includes/icon.html' with name='clock' %}
+                <strong>Definición de vencimiento comercial</strong>
+              </div>
+              <span class="badge badge-neutral">Parámetro exigido en crédito e-CF</span>
+            </header>
+
+            <div class="expiry-box-body">
+              <div class="form-grid-2">
+                <div class="form-field">
+                  <label for="{{ form.termino_pago.id_for_label }}">
+                    {{ form.termino_pago.label }} <span class="text-danger">*</span>
+                  </label>
+                  {{ form.termino_pago }}
+                  {% for error in form.termino_pago.errors %}
+                  <p class="field-error">{{ error }}</p>
+                  {% endfor %}
+                </div>
+
+                <div class="form-field">
+                  <label for="{{ form.fecha_vencimiento.id_for_label }}">
+                    {{ form.fecha_vencimiento.label }} <span class="text-danger">*</span>
+                  </label>
+                  {{ form.fecha_vencimiento }}
+                  {% for error in form.fecha_vencimiento.errors %}
+                  <p class="field-error">{{ error }}</p>
+                  {% endfor %}
+                </div>
+              </div>
+
+              <p class="expiry-helper-note">
+                ✓ Validación preventiva activa: La fecha límite calcula días naturales desde la fecha de emisión.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Conditional Panel 3: Gratuito -->
+        <div class="conditional-payment-panel" id="panel-gratuito" hidden>
+          <div class="alert alert-warning payment-callout">
+            {% include 'includes/icon.html' with name='alert' %}
+            <div>
+              <strong>Operación sin contraprestación comercial</strong>
+              <p>
+                Esta operación será registrada sin contraprestación dineraria (muestra médica, bonificación por volumen o donación fiscal autorizada). Los ítems deben reflejar valor comercial para cálculo de ITBIS si procede.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Forma de pago principal & Referencia XML -->
+        <div class="payment-method-row">
+          <div class="form-field payment-method-field">
+            <label for="{{ form.forma_pago.id_for_label }}">
+              {{ form.forma_pago.label }} <span class="text-danger">*</span>
+            </label>
+            {{ form.forma_pago }}
+            <p class="field-hint">Medio financiero previsto para la cancelación de la obligación</p>
+            {% for error in form.forma_pago.errors %}
+            <p class="field-error">{{ error }}</p>
+            {% endfor %}
+          </div>
+
+          <div class="xml-node-callout">
+            {% include 'includes/icon.html' with name='invoices' %}
+            <span>Se registrará en el nodo <code>&lt;FormaPago&gt;</code> del XML oficial firmado antes de su envío al Mock DGII.</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Page Footer Actions -->
+    <footer class="datos-footer-actions">
+      <a class="btn btn-secondary" href="{% url 'comprobantes:cliente' borrador_id=borrador.id %}">
+        {% include 'includes/icon.html' with name='reset' %} Volver al Paso 2 (Cliente)
+      </a>
+
+      <span class="status-summary-dot">
+        ● Paso 3 completo · Listo para registrar líneas
+      </span>
+
+      <button type="submit" class="btn btn-primary advance-btn" id="advance-btn">
+        <span>Continuar al Paso 4: Ítems y Servicios</span>
+        {% include 'includes/icon.html' with name='arrow-right' %}
+      </button>
+    </footer>
+  </form>
+</div>
+
+<!-- Modal Confirmation Dialog: Cambiar tipo de comprobante -->
+<dialog class="dialog change-type-modal" id="change-type-modal" aria-labelledby="change-modal-title">
+  <div class="modal-header">
+    <div class="modal-title-box">
+      <span class="modal-icon">{% include 'includes/icon.html' with name='reset' %}</span>
+      <div>
+        <h2 id="change-modal-title">¿Cambiar tipo de comprobante?</h2>
+        <p class="text-muted text-xs">Volver al Paso 1: Selección de e-CF</p>
+      </div>
+    </div>
+    <button type="button" class="btn-close" data-close-type-modal aria-label="Cerrar modal">✕</button>
+  </div>
+
+  <div class="modal-body">
+    <p>
+      Actualmente tienes seleccionado <strong>E{{ borrador.tipo_ecf }} ({{ tipo_display }})</strong> para el receptor <strong>{{ cliente.nombre }}</strong>. Al cambiar el tipo de comprobante, se recalcularán los campos específicos de validación tributaria.
+    </p>
+  </div>
+
+  <div class="modal-footer">
+    <button type="button" class="btn btn-secondary" data-close-type-modal>Cancelar</button>
+    <a class="btn btn-primary" href="{% url 'comprobantes:tipo' %}?cliente={{ cliente.id }}&tipo={{ borrador.tipo_ecf }}">
+      <span>Confirmar y volver</span>
+      {% include 'includes/icon.html' with name='arrow-right' %}
+    </a>
+  </div>
+</dialog>
+{% endblock %}

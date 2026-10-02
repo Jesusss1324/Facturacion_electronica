@@ -1,0 +1,48 @@
+/* UI-02: composición del inicio. Componentes y tokens provienen de global.css. */
+@layer components {
+  .dashboard-welcome { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-5); padding: var(--space-6); margin-bottom: var(--space-6); }
+  .dashboard-welcome-copy { flex: 1 1 26rem; min-width: 0; }
+  .dashboard-greeting { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); margin-bottom: var(--space-2); }
+  .dashboard-greeting h1 { font-size: var(--font-size-xl); overflow-wrap: anywhere; }
+  .dashboard-welcome-copy > p { font-size: var(--font-size-sm); }
+  .session-badge { font-size: var(--font-size-xs); }
+  .session-badge .icon { width: 0.875rem; height: 0.875rem; }
+  .dashboard-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-4); margin-bottom: var(--space-6); }
+  .dashboard-invoices .card-header h2 { font-size: var(--font-size-lg); }
+  .dashboard-invoices .card-header p { margin-top: var(--space-1); font-size: var(--font-size-xs); }
+  .dashboard-invoice-table { min-width: 58rem; }
+  .dashboard-invoice-table th { font-size: 0.6875rem; letter-spacing: 0.025em; text-transform: uppercase; white-space: nowrap; }
+  .dashboard-invoice-table td { padding-block: var(--space-3); font-size: var(--font-size-xs); }
+  .dashboard-table-hint { display: none; }
+  .dashboard-invoice-table th:first-child, .dashboard-invoice-table td:first-child { padding-left: var(--space-6); }
+  .dashboard-invoice-table th:last-child, .dashboard-invoice-table td:last-child { padding-right: var(--space-6); }
+  .invoice-reference { font-weight: 600; text-decoration: none; white-space: nowrap; }
+  .invoice-reference:hover, .invoice-detail-link:hover { text-decoration: underline; }
+  .invoice-client-name { display: block; min-width: 12rem; max-width: 19rem; font-weight: 600; }
+  .invoice-client-id { display: block; margin-top: var(--space-1); color: var(--color-muted); font-size: 0.6875rem; white-space: nowrap; }
+  .invoice-type { border-radius: var(--radius-sm); font-size: 0.6875rem; white-space: nowrap; }
+  .invoice-date { display: block; white-space: nowrap; }
+  .invoice-date span { display: block; margin-top: var(--space-1); color: var(--color-muted); font-size: 0.6875rem; }
+  .invoice-amount { white-space: nowrap; font-weight: 600; }
+  .invoice-status { font-size: 0.6875rem; white-space: nowrap; }
+  .invoice-status .icon { width: 0.875rem; height: 0.875rem; }
+  .invoice-detail-link { display: inline-flex; align-items: center; min-height: 2.75rem; padding-inline: var(--space-2); font-weight: 600; text-decoration: none; white-space: nowrap; }
+  .dashboard-invoices .card-footer .btn { min-height: 2.25rem; font-size: var(--font-size-xs); }
+  .dashboard-invoices .card-footer .icon { width: 0.875rem; height: 0.875rem; }
+  @media (max-width: 75rem) { .dashboard-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 60rem) {
+    .dashboard-table-hint { display: block; padding: var(--space-3) var(--space-4); color: var(--color-muted); font-size: var(--font-size-xs); border-bottom: 1px solid var(--color-border); }
+  }
+  @media (max-width: 40rem) {
+    .dashboard-welcome { padding: var(--space-5); }
+    .dashboard-welcome .page-actions { width: 100%; }
+    .dashboard-welcome .page-actions .btn { flex: 1 1 auto; }
+    .dashboard-stats { gap: var(--space-3); }
+    .dashboard-stats .stat-card { padding: var(--space-4); }
+    .dashboard-stats .stat-card-header { align-items: flex-start; }
+    .dashboard-stats .stat-card-header h2 { font-size: var(--font-size-xs); }
+    .dashboard-stats .stat-icon { width: 1.75rem; height: 1.75rem; }
+    .dashboard-stats .stat-icon .icon { width: 1rem; height: 1rem; }
+    .dashboard-invoices .card-header, .dashboard-invoices .card-footer { padding: var(--space-4); }
+  }
+}

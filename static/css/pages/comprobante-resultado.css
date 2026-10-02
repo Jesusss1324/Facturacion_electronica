@@ -1,0 +1,448 @@
+@layer components {
+  .resultado-container {
+    max-width: 1040px;
+    margin: 0 auto;
+    padding: var(--space-3) 0 var(--space-6) 0;
+  }
+
+  /* Banner Principal de Transmisión */
+  .resultado-banner-card {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    padding: var(--space-4) var(--space-5);
+    border-radius: var(--radius-lg, 12px);
+    margin-bottom: var(--space-5);
+    background: #ffffff;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.04);
+  }
+
+  .resultado-banner-card.banner-aprobado {
+    border-left: 6px solid #10b981;
+  }
+
+  .resultado-banner-card.banner-rechazado {
+    border-left: 6px solid #ef4444;
+  }
+
+  .banner-icon-badge {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    background: #f8fafc;
+  }
+
+  .banner-body {
+    flex: 1;
+  }
+
+  .banner-pretitle {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: 0.72rem;
+    font-weight: 700;
+    margin-bottom: 2px;
+  }
+
+  .banner-heading {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: var(--text-heading, #0f172a);
+    margin: 0 0 2px 0;
+    line-height: 1.25;
+  }
+
+  .banner-description {
+    font-size: 0.82rem;
+    margin: 0;
+    line-height: 1.35;
+  }
+
+  .banner-trackid-box {
+    background: #f8fafc;
+    border: 1px solid var(--border-color, #e2e8f0);
+    border-radius: var(--radius-md, 8px);
+    padding: var(--space-3) var(--space-4);
+    text-align: right;
+    flex-shrink: 0;
+  }
+
+  .trackid-label {
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: var(--text-muted, #64748b);
+    display: block;
+    margin-bottom: 2px;
+  }
+
+  .trackid-value {
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: var(--text-heading, #0f172a);
+  }
+
+  /* Cuadrícula Principal */
+  .resultado-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+    gap: var(--space-5);
+    margin-bottom: var(--space-5);
+    align-items: start;
+  }
+
+  @media (max-width: 900px) {
+    .resultado-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  /* Cédula Fiscal del Comprobante */
+  .cedula-card,
+  .dictamen-card {
+    background: #ffffff;
+    border: 1px solid var(--border-color, #e2e8f0);
+    border-radius: var(--radius-lg, 12px);
+    padding: var(--space-5);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.03);
+  }
+
+  .cedula-header,
+  .dictamen-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--space-4);
+    padding-bottom: var(--space-2);
+    border-bottom: 1px solid var(--border-light, #e2e8f0);
+  }
+
+  .cedula-header-title,
+  .dictamen-header-title {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+  }
+
+  .cedula-title,
+  .dictamen-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--text-heading, #0f172a);
+    margin: 0;
+  }
+
+  .cedula-type-badge {
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+
+  /* Recuadro e-NCF y Fecha */
+  .encf-display-box {
+    background: #f8fafc;
+    border: 1px solid var(--border-color, #e2e8f0);
+    border-radius: var(--radius-md, 8px);
+    padding: var(--space-3) var(--space-4);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--space-4);
+  }
+
+  .encf-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    margin-top: 2px;
+  }
+
+  .encf-val {
+    font-size: 1.15rem;
+    color: var(--primary, #1d4ed8);
+    font-weight: 800;
+  }
+
+  .date-val {
+    font-size: 0.82rem;
+    color: var(--text-heading, #0f172a);
+    font-weight: 600;
+    display: block;
+    margin-top: 2px;
+  }
+
+  .box-label {
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: var(--text-muted, #64748b);
+    display: block;
+    margin-bottom: 2px;
+    letter-spacing: 0.04em;
+  }
+
+  /* Fila Receptor */
+  .receptor-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-4);
+    margin-bottom: var(--space-4);
+  }
+
+  .receptor-name {
+    font-size: 0.88rem;
+    color: var(--text-heading, #0f172a);
+    display: block;
+    line-height: 1.3;
+  }
+
+  .receptor-category {
+    font-size: 0.72rem;
+    display: block;
+    margin-top: 2px;
+  }
+
+  .receptor-id {
+    font-size: 0.92rem;
+    color: var(--text-heading, #0f172a);
+  }
+
+  .card-divider {
+    border: 0;
+    border-top: 1px solid var(--border-light, #e2e8f0);
+    margin: var(--space-3) 0;
+  }
+
+  /* Desglose Financiero */
+  .financial-breakdown {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    font-size: 0.82rem;
+    margin-bottom: var(--space-4);
+  }
+
+  .financial-row {
+    display: flex;
+    justify-content: space-between;
+  }
+
+  /* Monto Total Liquidado (Navy Box) */
+  .grand-liquidated-box {
+    background: #0f172a;
+    color: #ffffff;
+    border-radius: var(--radius-md, 8px);
+    padding: var(--space-3) var(--space-4);
+    margin-bottom: var(--space-3);
+  }
+
+  .liquidated-header {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.68rem;
+    letter-spacing: 0.05em;
+    opacity: 0.85;
+    margin-bottom: 2px;
+  }
+
+  .liquidated-amount {
+    font-size: 1.55rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+  }
+
+  .cedula-footer {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.72rem;
+    padding-top: var(--space-2);
+    border-top: 1px solid var(--border-light, #e2e8f0);
+    line-height: 1.35;
+  }
+
+  /* Dictamen Fiscal DGII */
+  .rejection-callout {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: var(--radius-md, 8px);
+    padding: var(--space-3) var(--space-4);
+    margin-bottom: var(--space-4);
+    font-size: 0.76rem;
+    color: #991b1b;
+    line-height: 1.4;
+  }
+
+  .rejection-reason {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+    margin-bottom: 6px;
+  }
+
+  .rejection-suggestion {
+    border-top: 1px dashed rgba(239, 68, 68, 0.3);
+    padding-top: 6px;
+  }
+
+  .rejection-suggestion p {
+    margin: 2px 0 0 0;
+  }
+
+  .dictamen-meta-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    font-size: 0.8rem;
+    margin-bottom: var(--space-4);
+  }
+
+  .dictamen-meta-row {
+    display: flex;
+    justify-content: space-between;
+    border-bottom: 1px dashed var(--border-light, #e2e8f0);
+    padding-bottom: 4px;
+  }
+
+  .artifacts-box {
+    background: #f8fafc;
+    border: 1px solid var(--border-color, #e2e8f0);
+    border-radius: var(--radius-md, 8px);
+    padding: var(--space-3) var(--space-4);
+    margin-bottom: var(--space-4);
+  }
+
+  .artifacts-title {
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: var(--text-muted, #64748b);
+    letter-spacing: 0.05em;
+    margin: 0 0 var(--space-2) 0;
+  }
+
+  .artifacts-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 0.75rem;
+  }
+
+  .artifacts-list li {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+    color: var(--text-main, #334155);
+  }
+
+  /* Acordeón Nodo XML Fiscal */
+  .xml-node-accordion {
+    border: 1px solid var(--border-color, #e2e8f0);
+    border-radius: var(--radius-md, 8px);
+    overflow: hidden;
+  }
+
+  .xml-node-summary {
+    padding: var(--space-2) var(--space-3);
+    background: #f8fafc;
+    font-size: 0.76rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    user-select: none;
+  }
+
+  .xml-code-box {
+    background: #0f172a;
+    color: #f1f5f9;
+    padding: var(--space-3);
+    margin: 0;
+    font-size: 0.7rem;
+    max-height: 220px;
+    overflow-y: auto;
+    line-height: 1.35;
+  }
+
+  .xml-node-footer {
+    padding: 4px var(--space-3);
+    background: #f8fafc;
+    border-top: 1px solid var(--border-light, #e2e8f0);
+    text-align: right;
+  }
+
+  /* Barra Operacional Inferior */
+  .resultado-bottom-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--space-4) var(--space-5);
+    background: #ffffff;
+    border: 1px solid var(--border-color, #e2e8f0);
+    border-radius: var(--radius-lg, 12px);
+    flex-wrap: wrap;
+    gap: var(--space-3);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.03);
+  }
+
+  .actions-left-meta {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+  }
+
+  .actions-icon-badge {
+    width: 38px;
+    height: 38px;
+    border-radius: var(--radius-md, 8px);
+    background: rgba(37, 99, 235, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .actions-right-buttons {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    flex-wrap: wrap;
+  }
+
+  .btn-outline-danger {
+    border: 1px solid #ef4444;
+    color: #dc2626;
+    background: transparent;
+    font-weight: 600;
+    font-size: 0.82rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 12px;
+  }
+
+  .btn-outline-danger:hover {
+    background: #fef2f2;
+    border-color: #dc2626;
+  }
+
+  .btn-link-arrow {
+    font-weight: 700;
+    color: var(--primary, #1d4ed8);
+    text-decoration: none;
+    font-size: 0.82rem;
+  }
+
+  .btn-link-arrow:hover {
+    text-decoration: underline;
+  }
+
+  .code-font {
+    font-family: var(--font-mono, monospace);
+  }
+}

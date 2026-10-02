@@ -1,0 +1,204 @@
+{% extends 'layouts/app.html' %}
+{% load static %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/pages/comprobante-tipo.css' %}">
+{% endblock %}
+{% block extra_js %}
+<script src="{% static 'js/pages/comprobante-tipo.js' %}" defer></script>
+{% endblock %}
+
+{% block before_content %}
+{% include 'includes/invoice_steps.html' %}
+{% endblock %}
+
+{% block page_header %}
+<header class="invoice-type-header">
+  <div class="invoice-type-eyebrow">
+    <span class="badge badge-info">Paso 1 de 6 · Clasificación Fiscal</span>
+    <span class="norm-tag">Norma General 01-2024 · DGII</span>
+  </div>
+  <div class="invoice-type-title-row">
+    <h1>Nueva factura electrónica</h1>
+  </div>
+  <p class="invoice-type-subtitle">Selecciona el tipo de comprobante fiscal electrónico</p>
+  <p class="text-muted invoice-type-description">
+    Elige el comprobante electrónico que deseas emitir. La estructura y los requisitos de validación fiscal se adaptarán automáticamente en las siguientes etapas.
+  </p>
+  {% if cliente_preseleccionado %}
+  <div class="alert alert-info client-context-notice">
+    {% include 'includes/icon.html' with name='users' %}
+    <div>
+      <strong>Cliente preseleccionado:</strong> {{ cliente_preseleccionado.nombre }}
+      <span class="text-muted">({{ cliente_preseleccionado.tipo_identificacion }}: {{ cliente_preseleccionado.identificacion_display }})</span>
+    </div>
+  </div>
+  {% endif %}
+</header>
+{% endblock %}
+
+{% block content %}
+<div class="invoice-type-wrapper">
+  {% if form.errors %}
+  <div class="alert alert-danger client-error-summary" role="alert" tabindex="-1">
+    <strong>Revisa la selección</strong>
+    {% for error in form.tipo_ecf.errors %}<p>{{ error }}</p>{% endfor %}
+    {% for error in form.cliente.errors %}<p>{{ error }}</p>{% endfor %}
+    {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
+  </div>
+  {% endif %}
+
+  <form method="post" class="invoice-type-form" novalidate data-type-form>
+    {% csrf_token %}
+    <input type="hidden" name="cliente" value="{{ form.cliente.value|default:'' }}">
+
+    <!-- Cards Grid -->
+    <div class="type-cards-grid" role="radiogroup" aria-label="Tipo de comprobante electrónico">
+      <!-- Card E31 -->
+      <label class="type-card type-card-e31{% if form.tipo_ecf.value == '31' or not form.tipo_ecf.value %} is-selected{% endif %}" data-type-card="31">
+        <input type="radio" name="tipo_ecf" value="31" class="sr-only" {% if form.tipo_ecf.value == '31' or not form.tipo_ecf.value %}checked{% endif %}>
+        <div class="type-card-header">
+          <div class="type-badge-box">
+            <span class="type-code-badge">E31</span>
+            {% include 'includes/icon.html' with name='invoices' %}
+          </div>
+          <span class="type-select-check" aria-hidden="true">
+            {% include 'includes/icon.html' with name='check-circle' %}
+          </span>
+        </div>
+
+        <div class="type-card-body">
+          <h2>Factura de Crédito Fiscal Electrónica</h2>
+          <p class="type-card-desc">
+            Utilízala cuando la operación requiera un comprobante fiscal asociado a un cliente identificado para sustentar costos, gastos o crédito fiscal (ITBIS adelantable).
+          </p>
+
+          <ul class="type-features-list">
+            <li>
+              {% include 'includes/icon.html' with name='check-circle' %}
+              <span>Requiere RNC válido y activo del receptor</span>
+            </li>
+            <li>
+              {% include 'includes/icon.html' with name='shield' %}
+              <span>Acreditación tributaria deducible ante DGII</span>
+            </li>
+            <li>
+              {% include 'includes/icon.html' with name='activity' %}
+              <span>Admite retenciones ITBIS e ISR</span>
+            </li>
+          </ul>
+        </div>
+
+        <div class="type-card-footer">
+          <span class="type-spec-code">Tipo Comprobante: <strong>31</strong></span>
+          <span class="selected-pill" data-selected-indicator="31">Seleccionado</span>
+        </div>
+      </label>
+
+      <!-- Card E32 -->
+      <label class="type-card type-card-e32{% if form.tipo_ecf.value == '32' %} is-selected{% endif %}" data-type-card="32">
+        <input type="radio" name="tipo_ecf" value="32" class="sr-only" {% if form.tipo_ecf.value == '32' %}checked{% endif %}>
+        <div class="type-card-header">
+          <div class="type-badge-box">
+            <span class="type-code-badge type-code-e32">E32</span>
+            {% include 'includes/icon.html' with name='user' %}
+          </div>
+          <span class="type-select-check" aria-hidden="true">
+            {% include 'includes/icon.html' with name='check-circle' %}
+          </span>
+        </div>
+
+        <div class="type-card-body">
+          <h2>Factura de Consumo Electrónica</h2>
+          <p class="type-card-desc">
+            Utilízala para ventas de bienes o servicios destinadas a consumidores finales que no usarán el comprobante para crédito fiscal ni deducción tributaria.
+          </p>
+
+          <ul class="type-features-list">
+            <li>
+              {% include 'includes/icon.html' with name='users' %}
+              <span>Operaciones para público general o persona física</span>
+            </li>
+            <li>
+              {% include 'includes/icon.html' with name='lock' %}
+              <span>Cédula requerida si el monto &ge; RD$ 250,000</span>
+            </li>
+            <li>
+              {% include 'includes/icon.html' with name='minus-circle' %}
+              <span>No genera crédito fiscal de ITBIS</span>
+            </li>
+          </ul>
+        </div>
+
+        <div class="type-card-footer">
+          <span class="type-spec-code">Tipo Comprobante: <strong>32</strong></span>
+          <span class="selected-pill" data-selected-indicator="32">Seleccionado</span>
+        </div>
+      </label>
+    </div>
+
+    <!-- Collapsible comparison guide -->
+    <details class="type-comparison-box card" data-comparison-details>
+      <summary class="type-comparison-header">
+        <div class="comparison-header-content">
+          <span class="comparison-icon" aria-hidden="true">?</span>
+          <div>
+            <strong>¿No sabes cuál elegir? Guía rápida de selección</strong>
+            <p class="text-muted">Comparativa normativa entre comprobante E31 y E32 según la DGII</p>
+          </div>
+        </div>
+        <span class="comparison-toggle-text" data-toggle-label>Ver comparativa ⌵</span>
+      </summary>
+
+      <div class="type-comparison-body">
+        <div class="comparison-grid">
+          <div class="comparison-card">
+            <div class="comparison-card-head">
+              <strong>E31 · Crédito Fiscal</strong>
+              <span class="badge badge-info">B2B / Corporativo</span>
+            </div>
+            <ul class="comparison-list">
+              <li><strong>Receptor:</strong> Empresas, personas jurídicas o profesionales registrados con RNC.</li>
+              <li><strong>Propósito tributario:</strong> Deducir costos/gastos para ISR y deducir crédito de ITBIS.</li>
+              <li><strong>Formato 606:</strong> El comprador lo declara formalmente en sus compras mensuales.</li>
+            </ul>
+          </div>
+
+          <div class="comparison-card">
+            <div class="comparison-card-head">
+              <strong>E32 · Consumo Final</strong>
+              <span class="badge badge-neutral">B2C / Público General</span>
+            </div>
+            <ul class="comparison-list">
+              <li><strong>Receptor:</strong> Consumidores finales de bienes o servicios para uso personal.</li>
+              <li><strong>Sin deducción:</strong> No apto para declarar gastos tributarios en DGII.</li>
+              <li><strong>Identificación opcional:</strong> Solo obligatorio identificar al cliente si el importe excede RD$ 250,000.</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="comparison-footer-note">
+          {% include 'includes/icon.html' with name='invoices' %}
+          <span>
+            ¿Necesitas Notas de Crédito (E34) o Compras Especiales (E44)? Utiliza el catálogo extendido en Configuración.
+            <a href="https://dgii.gov.do/facturacion/comprobantesFiscalesElectronicos" target="_blank" rel="noopener noreferrer">Ver tabla oficial DGII</a>
+          </span>
+        </div>
+      </div>
+    </details>
+
+    <!-- Action Bar / Footer -->
+    <footer class="invoice-type-footer">
+      <a class="btn btn-secondary" href="{% if cliente_preseleccionado %}{% url 'clientes:detalle' pk=cliente_preseleccionado.id %}{% else %}{% url 'core:inicio' %}{% endif %}">Cancelar</a>
+
+      <div class="selected-summary-text" data-selected-summary>
+        Seleccionado: <strong data-summary-label>{% if form.tipo_ecf.value == '32' %}E32 (Consumo){% else %}E31 (Crédito Fiscal){% endif %}</strong>
+      </div>
+
+      <button class="btn btn-primary" type="submit" data-submit-btn>
+        <span>Continuar al Paso 2: Cliente</span>
+        {% include 'includes/icon.html' with name='arrow-right' %}
+      </button>
+    </footer>
+  </form>
+</div>
+{% endblock %}

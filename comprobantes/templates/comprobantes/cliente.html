@@ -1,0 +1,415 @@
+{% extends 'layouts/app.html' %}
+{% load static %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/pages/comprobante-cliente.css' %}">
+{% endblock %}
+{% block extra_js %}
+<script src="{% static 'js/pages/comprobante-cliente.js' %}" defer></script>
+{% endblock %}
+
+{% block before_content %}
+{% include 'includes/invoice_steps.html' %}
+{% endblock %}
+
+{% block page_header %}
+<div class="comprobante-header-wrapper">
+  <!-- Fiscal Type Context Banner -->
+  <div class="fiscal-type-banner card">
+    <div class="fiscal-type-left">
+      <span class="fiscal-type-icon">{% include 'includes/icon.html' with name='shield' %}</span>
+      <div>
+        <div class="fiscal-type-badge-row">
+          <span class="badge badge-primary">E{{ borrador.tipo_ecf }}</span>
+          <strong>{{ tipo_display }}</strong>
+          <span class="fiscal-status-dot">● Secuencia e-NCF activa</span>
+        </div>
+        <p class="fiscal-type-requirement">
+          {% if borrador.tipo_ecf == '31' %}
+          Requisito fiscal: El receptor debe ser un contribuyente con RNC habilitado ante la DGII para deducción de ITBIS y gastos.
+          {% else %}
+          Requisito fiscal: Comprobante para consumidor final. Operaciones para público general o persona física sin crédito tributario deducible.
+          {% endif %}
+        </p>
+      </div>
+    </div>
+    <a class="btn btn-secondary btn-sm" href="{% url 'comprobantes:tipo' %}?tipo={{ borrador.tipo_ecf }}">
+      {% include 'includes/icon.html' with name='reset' %} Cambiar tipo de e-CF
+    </a>
+  </div>
+
+  <header class="client-selection-header">
+    <div class="header-titles">
+      <span class="badge badge-info">PASO 2 · RECEPTOR FISCAL · Validación de RNC / Cédula</span>
+      <h1>Selecciona un cliente receptor</h1>
+    </div>
+    <p class="text-muted header-description">
+      Elige el contribuyente o cliente al que se emitirá este comprobante electrónico. Solo clientes con estatus fiscal <strong>Activo</strong> pueden ser vinculados a un comprobante E{{ borrador.tipo_ecf }} timbrado.
+    </p>
+  </header>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="client-selection-wrapper" data-tipo-ecf="{{ borrador.tipo_ecf }}">
+  <!-- Dynamic Restriction Alert Banner -->
+  <div class="alert alert-danger restriction-alert" id="selection-restriction-banner" {% if not restriccion_inactivo %}hidden{% endif %}>
+    {% include 'includes/icon.html' with name='alert' %}
+    <div class="alert-content">
+      <strong>Restricción Fiscal DGII - Contribuyente Inactivo</strong>
+      <p id="selection-restriction-text">
+        {% if cliente_seleccionado and not cliente_seleccionado.activo %}
+        {{ cliente_seleccionado.nombre }} figura con estado 'Inactivo / Suspendido' en la base fiscal. El e-CF E{{ borrador.tipo_ecf }} sería rechazado automáticamente por la DGII.
+        {% endif %}
+      </p>
+    </div>
+  </div>
+
+  <div class="client-selection-grid">
+    <!-- Left Column: Directory and Search -->
+    <div class="directory-column">
+      <!-- Search & Automatic Fiscal Scope Toolbar -->
+      <div class="card selection-toolbar">
+        <form class="search-form" method="get" action="." data-search-form>
+          {% if cliente_seleccionado %}
+          <input type="hidden" name="cliente" value="{{ cliente_seleccionado.id }}">
+          {% endif %}
+          <div class="search-input-wrapper">
+            <span class="search-icon">{% include 'includes/icon.html' with name='search' %}</span>
+            <input
+              type="search"
+              name="q"
+              value="{{ q }}"
+              class="form-control search-input"
+              placeholder="{% if borrador.tipo_ecf == '32' %}Buscar por cédula o nombre de persona...{% else %}Buscar por RNC o razón social de empresa...{% endif %}"
+              aria-label="Buscar clientes"
+              autocomplete="off"
+            >
+          </div>
+        </form>
+
+        <div class="fiscal-scope-indicator">
+          <span class="badge badge-info">
+            <span class="scope-dot">●</span> {{ filtro_label }}
+          </span>
+        </div>
+
+        <button type="button" class="btn btn-secondary btn-sm new-client-btn" data-open-modal>
+          {% include 'includes/icon.html' with name='plus' %} Nuevo
+        </button>
+      </div>
+
+      <!-- Clients Card List -->
+      {% if clientes %}
+      <div class="client-cards-list" role="radiogroup" aria-label="Clientes receptores disponibles">
+        {% for c in clientes %}
+        <div
+          class="card client-item-card{% if cliente_seleccionado and cliente_seleccionado.id == c.id %} is-selected{% endif %}{% if not c.activo %} is-inactive{% endif %}"
+          data-client-card
+          data-id="{{ c.id }}"
+          data-nombre="{{ c.nombre }}"
+          data-identificacion="{{ c.identificacion_display }}"
+          data-tipo-id="{{ c.tipo_identificacion }}"
+          data-telefono="{{ c.telefono|default:'No registrado' }}"
+          data-email="{{ c.email|default:'No registrado' }}"
+          data-direccion="{{ c.direccion|default:'No registrada' }}"
+          data-activo="{% if c.activo %}1{% else %}0{% endif %}"
+          data-categoria="{{ c.categoria_display }}"
+          tabindex="0"
+          role="radio"
+          aria-checked="{% if cliente_seleccionado and cliente_seleccionado.id == c.id %}true{% else %}false{% endif %}"
+        >
+          <div class="card-icon-avatar">
+            {% if c.tipo_identificacion == 'RNC' %}
+            {% include 'includes/icon.html' with name='invoices' %}
+            {% else %}
+            {% include 'includes/icon.html' with name='user' %}
+            {% endif %}
+          </div>
+
+          <div class="card-info">
+            <h3 class="card-client-name">{{ c.nombre }}</h3>
+            <p class="card-client-category">{{ c.categoria_display }}</p>
+            <div class="card-client-meta">
+              <span class="card-client-id tabular-numbers">
+                {% include 'includes/icon.html' with name='user' %} {{ c.identificacion_display }}
+              </span>
+              {% if c.activo %}
+              <span class="status-indicator status-active">✓ Activo</span>
+              {% else %}
+              <span class="status-indicator status-inactive">● Inactivo</span>
+              {% endif %}
+            </div>
+          </div>
+
+          <div class="card-select-mark" aria-hidden="true">
+            <span class="mark-circle"></span>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+
+      <!-- Directory Footer with Pagination -->
+      <footer class="directory-footer">
+        <div class="directory-footer-meta">
+          <span class="text-muted text-xs">
+            Mostrando <strong>{{ page_obj.start_index }}–{{ page_obj.end_index }}</strong> de <strong>{{ page_obj.paginator.count }}</strong> {{ filtro_label|lower }}
+          </span>
+        </div>
+
+        {% if page_obj.has_other_pages %}
+        <nav class="pagination" aria-label="Páginas de clientes receptores">
+          {% if previous_url %}
+          <a href="{{ previous_url }}" aria-label="Página anterior">‹</a>
+          {% else %}
+          <span class="pagination-disabled" aria-disabled="true" aria-label="Página anterior">‹</span>
+          {% endif %}
+
+          {% for item in pagination %}
+            {% if item.url %}
+              <a href="{{ item.url }}"{% if item.current %} class="is-current" aria-current="page"{% endif %} aria-label="Página {{ item.label }}">
+                {{ item.label }}
+              </a>
+            {% else %}
+              <span aria-hidden="true">{{ item.label }}</span>
+            {% endif %}
+          {% endfor %}
+
+          {% if next_url %}
+          <a href="{{ next_url }}" aria-label="Página siguiente">›</a>
+          {% else %}
+          <span class="pagination-disabled" aria-disabled="true" aria-label="Página siguiente">›</span>
+          {% endif %}
+        </nav>
+        {% endif %}
+
+        <div class="directory-footer-back">
+          <a class="back-link text-xs" href="{% url 'comprobantes:tipo' %}?tipo={{ borrador.tipo_ecf }}">
+            ← Volver al Paso 1 (Tipo e-CF)
+          </a>
+        </div>
+      </footer>
+      {% else %}
+      <!-- Empty Search Results State -->
+      <div class="card empty-search-state">
+        <span class="empty-state-icon">{% include 'includes/icon.html' with name='search' %}</span>
+        <h3>No se encontraron clientes</h3>
+        <p class="text-muted">
+          No hay {{ filtro_label|lower }} que coincidan con el criterio ingresado. Puedes registrar al cliente de inmediato para continuar con la factura.
+        </p>
+        <div class="empty-state-actions">
+          <a class="btn btn-secondary" href="?">Limpiar búsqueda</a>
+          <button class="btn btn-primary" type="button" data-open-modal>
+            {% include 'includes/icon.html' with name='plus' %} Crear cliente ahora
+          </button>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Right Column: Ficha del Receptor Preview Card -->
+    <aside class="preview-column">
+      <div class="card receptor-card" id="receptor-card">
+        <header class="receptor-card-header">
+          <div class="receptor-title-box">
+            <span class="receptor-icon">{% include 'includes/icon.html' with name='user' %}</span>
+            <div>
+              <span class="receptor-eyebrow">FICHA DEL RECEPTOR</span>
+              <h2>Cliente Seleccionado</h2>
+            </div>
+          </div>
+          <a
+            href="{% if cliente_seleccionado %}{% url 'clientes:detalle' pk=cliente_seleccionado.id %}{% else %}#{% endif %}"
+            target="_blank"
+            class="external-link"
+            id="preview-detail-link"
+            title="Ver perfil completo"
+            {% if not cliente_seleccionado %}hidden{% endif %}
+          >
+            {% include 'includes/icon.html' with name='eye' %}
+          </a>
+        </header>
+
+        <div class="receptor-card-body">
+          <div id="receptor-empty-state" {% if cliente_seleccionado %}hidden{% endif %}>
+            <p class="text-muted empty-prompt">
+              Selecciona un cliente receptor de la lista o registra uno nuevo para continuar con la emisión de la factura.
+            </p>
+          </div>
+
+          <div id="receptor-active-content" {% if not cliente_seleccionado %}hidden{% endif %}>
+            <div class="verification-tag-row">
+              <span class="verification-tag" id="preview-verification-tag">
+                ● <span id="preview-tipo-id">{{ cliente_seleccionado.tipo_identificacion|default:'RNC' }}</span> Verificado ante DGII
+              </span>
+            </div>
+
+            <h3 class="preview-name" id="preview-name">{{ cliente_seleccionado.nombre|default:'' }}</h3>
+            <p class="preview-category text-muted text-xs" id="preview-category">{{ cliente_seleccionado.categoria_display|default:'' }}</p>
+
+            <dl class="preview-details-list">
+              <div>
+                <dt>RNC / Cédula:</dt>
+                <dd class="tabular-numbers" id="preview-identificacion">{{ cliente_seleccionado.identificacion_display|default:'' }}</dd>
+              </div>
+              <div>
+                <dt>Teléfono:</dt>
+                <dd id="preview-telefono">{{ cliente_seleccionado.telefono|default:'No registrado' }}</dd>
+              </div>
+              <div class="span-full">
+                <dt>Correo Receptor e-CF:</dt>
+                <dd id="preview-email">{{ cliente_seleccionado.email|default:'No registrado' }}</dd>
+              </div>
+              <div class="span-full">
+                <dt>Dirección Fiscal:</dt>
+                <dd id="preview-direccion">{{ cliente_seleccionado.direccion|default:'No registrada' }}</dd>
+              </div>
+            </dl>
+
+            <!-- Compliance Callout -->
+            <div class="compliance-callout alert alert-info" id="preview-compliance-box">
+              {% include 'includes/icon.html' with name='check-circle' %}
+              <p id="preview-compliance-text">
+                {% if borrador.tipo_ecf == '31' %}
+                Cumple perfil para E31. Contribuyente con RNC activo, habilitado con certificado digital para recepción de comprobante fiscal con crédito deducible de ITBIS y gastos.
+                {% else %}
+                Cumple perfil para E32. Consumidor final persona física habilitado para emisión de comprobante de consumo.
+                {% endif %}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <footer class="receptor-card-footer">
+          <p class="selection-status-note" id="preview-status-note">
+            {% if cliente_seleccionado and cliente_seleccionado.activo %}
+            ● 1 cliente activo seleccionado para la emisión
+            {% else %}
+            ● Ningún cliente activo seleccionado
+            {% endif %}
+          </p>
+
+          <form method="post" id="advance-form" action=".">
+            {% csrf_token %}
+            <input type="hidden" name="cliente_id" id="form-cliente-id" value="{{ cliente_seleccionado.id|default:'' }}">
+            <button
+              class="btn btn-primary advance-btn"
+              type="submit"
+              id="advance-btn"
+              {% if not cliente_seleccionado or not cliente_seleccionado.activo %}disabled{% endif %}
+            >
+              <span>Continuar al Paso 3: Datos Emisión</span>
+              {% include 'includes/icon.html' with name='arrow-right' %}
+            </button>
+          </form>
+        </footer>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<!-- Modal Dialog: Registrar Cliente Receptor Rápido -->
+<dialog class="dialog client-quick-modal" id="quick-client-modal" aria-labelledby="modal-title"{% if abrir_modal %} data-auto-open="true"{% endif %}>
+  <div class="modal-header">
+    <div class="modal-title-box">
+      <span class="modal-icon">{% include 'includes/icon.html' with name='users' %}</span>
+      <div>
+        <h2 id="modal-title">Registrar Cliente Receptor Rápido</h2>
+        <p class="text-muted text-xs">Valida en tiempo real con el RNC de la DGII</p>
+      </div>
+    </div>
+    <button type="button" class="btn-close" data-close-modal aria-label="Cerrar modal">✕</button>
+  </div>
+
+  <form method="post" class="modal-form" novalidate data-modal-client-form>
+    {% csrf_token %}
+    <input type="hidden" name="accion" value="crear_cliente">
+
+    <div class="modal-body">
+      {% if modal_form.errors %}
+      <div class="alert alert-danger modal-error-summary">
+        <strong>Corrige los campos indicados:</strong>
+        {{ modal_form.non_field_errors }}
+      </div>
+      {% endif %}
+
+      <!-- 1. Tipo de documento fiscal -->
+      <div class="form-field">
+        <label class="field-label" id="modal-doc-type-label">Tipo de documento fiscal <span class="text-danger">*</span></label>
+        <div class="modal-doc-options" role="radiogroup" aria-labelledby="modal-doc-type-label">
+          {% for radio in modal_form.tipo_identificacion %}
+            {% if borrador.tipo_ecf == '32' and radio.data.value == 'CEDULA' %}
+            <label class="modal-doc-option is-selected">
+              {{ radio.tag }}
+              <span><strong>{{ radio.choice_label }}</strong></span>
+            </label>
+            {% elif borrador.tipo_ecf == '31' and radio.data.value == 'RNC' %}
+            <label class="modal-doc-option is-selected">
+              {{ radio.tag }}
+              <span><strong>{{ radio.choice_label }}</strong></span>
+            </label>
+            {% endif %}
+          {% endfor %}
+        </div>
+        <p class="field-hint">Definido automáticamente para este comprobante: {% if borrador.tipo_ecf == '32' %}Persona Física (Cédula){% else %}Empresa / Jurídico (RNC){% endif %}.</p>
+        {% for error in modal_form.tipo_identificacion.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+      </div>
+
+      <!-- 2. RNC o Cédula con botón Consultar DGII -->
+      <div class="form-field">
+        <label for="{{ modal_form.identificacion.id_for_label }}">
+          <span id="modal-identificacion-label">{{ modal_form.identificacion.label }}</span> <span class="text-danger">*</span>
+        </label>
+        <div class="input-with-action">
+          {{ modal_form.identificacion }}
+          <button type="button" class="btn btn-secondary btn-sm" data-consultar-dgii>
+            {% include 'includes/icon.html' with name='search' %} Consultar DGII
+          </button>
+        </div>
+        {% for error in modal_form.identificacion.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+      </div>
+
+      <!-- 3. Razón Social / Nombre -->
+      <div class="form-field">
+        <label for="{{ modal_form.nombre.id_for_label }}">
+          <span id="modal-nombre-label">{{ modal_form.nombre.label }}</span> <span class="text-danger">*</span>
+        </label>
+        {{ modal_form.nombre }}
+        {% for error in modal_form.nombre.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+      </div>
+
+      <!-- 4. Teléfono y Correo -->
+      <div class="form-grid modal-grid">
+        <div class="form-field">
+          <label for="{{ modal_form.telefono.id_for_label }}">{{ modal_form.telefono.label }}</label>
+          {{ modal_form.telefono }}
+          {% for error in modal_form.telefono.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+        </div>
+        <div class="form-field">
+          <label for="{{ modal_form.email.id_for_label }}">{{ modal_form.email.label }}</label>
+          {{ modal_form.email }}
+          {% for error in modal_form.email.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+        </div>
+      </div>
+
+      <!-- 5. Dirección comercial o fiscal -->
+      <div class="form-field">
+        <label for="{{ modal_form.direccion.id_for_label }}">{{ modal_form.direccion.label }}</label>
+        {{ modal_form.direccion }}
+        {% for error in modal_form.direccion.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+      </div>
+
+      <div class="modal-callout alert alert-info">
+        {% include 'includes/icon.html' with name='check-circle' %}
+        <span>El cliente quedará guardado y seleccionado de inmediato para este comprobante fiscal.</span>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" data-close-modal>Cancelar</button>
+      <button type="submit" class="btn btn-primary" data-save-modal-btn>
+        <span>Guardar y Seleccionar</span>
+      </button>
+    </div>
+  </form>
+</dialog>
+{% endblock %}

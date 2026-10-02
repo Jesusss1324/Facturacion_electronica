@@ -1,0 +1,11 @@
+{# Indicador visual: los enlaces se habilitarán con la validación de cada paso. #}
+<nav class="invoice-steps card" aria-label="Etapas de la factura">
+  <ol>
+    {% for label in invoice_steps %}
+    <li class="invoice-step{% if forloop.counter == screen.step %} is-current{% endif %}"{% if forloop.counter == screen.step %} aria-current="step"{% endif %}>
+      <span class="step-number" aria-hidden="true">{{ forloop.counter }}</span>
+      <span>{{ label }}</span>
+    </li>
+    {% endfor %}
+  </ol>
+</nav>

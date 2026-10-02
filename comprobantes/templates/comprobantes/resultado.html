@@ -1,0 +1,337 @@
+{% extends 'layouts/app.html' %}
+{% load static ui_format %}
+
+{% block extra_css %}
+  <link rel="stylesheet" href="{% static 'css/pages/comprobante-resultado.css' %}">
+{% endblock %}
+
+{% block extra_js %}
+  <script src="{% static 'js/pages/comprobante-resultado.js' %}" defer></script>
+{% endblock %}
+
+{% block content %}
+<div class="resultado-container">
+
+  {# BANNER PRINCIPAL DE RESULTADO DE TRANSMISIÓN #}
+  <div class="resultado-banner-card card {% if es_aprobado %}banner-aprobado{% else %}banner-rechazado{% endif %}">
+    <div class="banner-icon-badge">
+      {% if es_aprobado %}
+        <svg class="icon icon-lg text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      {% else %}
+        <svg class="icon icon-lg text-danger" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      {% endif %}
+    </div>
+
+    <div class="banner-body">
+      <div class="banner-pretitle">
+        <span class="text-muted">TRANSMISIÓN FISCAL E-CF</span>
+        {% if es_aprobado %}
+          <span class="badge badge-success-subtle">● Comprobante Aceptado por DGII</span>
+        {% else %}
+          <span class="badge badge-danger-subtle">● Rechazado por DGII (Error {{ regla_error }})</span>
+        {% endif %}
+      </div>
+
+      <h1 class="banner-heading">
+        {% if es_aprobado %}
+          Factura Electrónica Emitida Exitosamente
+        {% else %}
+          Emisión Rechazada por DGII
+        {% endif %}
+      </h1>
+
+      <p class="banner-description text-muted">
+        {% if es_aprobado %}
+          El comprobante fiscal digital ha sido validado, firmado y timbrado según la normativa de la Ley 32-23.
+        {% else %}
+          La transacción fiscal no superó la validación tributaria en el servicio de recepción de comprobantes fiscales.
+        {% endif %}
+      </p>
+    </div>
+
+    <div class="banner-trackid-box">
+      <span class="trackid-label">Identificador DGII (TrackId)</span>
+      <strong class="trackid-value code-font">{{ track_id }}</strong>
+    </div>
+  </div>
+
+  {# CUADRÍCULA PRINCIPAL (CÉDULA FISCAL vs DICTAMEN DGII) #}
+  <div class="resultado-grid">
+
+    {# COLUMNA IZQUIERDA: CÉDULA FISCAL DEL COMPROBANTE #}
+    <section class="cedula-card card" aria-labelledby="cedula-title">
+      <header class="cedula-header">
+        <div class="cedula-header-title">
+          <svg class="icon icon-sm text-primary" aria-hidden="true" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+          <h2 class="cedula-title" id="cedula-title">Cédula Fiscal del Comprobante</h2>
+        </div>
+        <span class="cedula-type-badge text-muted">Tipo {{ factura.tipo_ecf }} · {{ factura.tipo_display }}</span>
+      </header>
+
+      {# Recuadro e-NCF y Fecha #}
+      <div class="encf-display-box">
+        <div class="encf-number-col">
+          <span class="box-label">NÚMERO DE COMPROBANTE FISCAL ELECTRÓNICO</span>
+          <div class="encf-row">
+            <strong class="encf-val code-font">{{ factura.e_ncf }}</strong>
+            <button type="button" class="btn btn-outline btn-xs" id="btn-copiar-encf" data-encf="{{ factura.e_ncf }}" title="Copiar e-NCF al portapapeles">
+              <svg class="icon icon-xs" aria-hidden="true" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+              </svg>
+              <span id="btn-copiar-encf-texto">Copiar</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="encf-date-col text-right">
+          <span class="box-label">Fecha de Emisión</span>
+          <strong class="date-val">{{ fecha_display }}</strong>
+        </div>
+      </div>
+
+      {# Receptor #}
+      <div class="receptor-row">
+        <div class="receptor-item">
+          <span class="box-label">RAZÓN SOCIAL DEL RECEPTOR</span>
+          <strong class="receptor-name">{{ cliente.nombre }}</strong>
+          <span class="receptor-category text-muted">{{ cliente.categoria_display }}</span>
+        </div>
+        <div class="receptor-item">
+          <span class="box-label">RNC DEL RECEPTOR</span>
+          <strong class="receptor-id code-font">{{ cliente.identificacion_display }}</strong>
+          {% if es_aprobado %}
+            <span class="badge badge-success-subtle mt-1">✔ Habilitado e-CF activo</span>
+          {% else %}
+            <span class="badge badge-danger-subtle mt-1">⊗ No habilitado para e-CF</span>
+          {% endif %}
+        </div>
+      </div>
+
+      <hr class="card-divider">
+
+      {# Desglose Financiero #}
+      <div class="financial-breakdown">
+        <div class="financial-row">
+          <span class="text-muted">Subtotal Gravado Neto (18%):</span>
+          <strong class="code-font">{{ base|moneda_rd }}</strong>
+        </div>
+        <div class="financial-row">
+          <span class="text-muted">ITBIS Facturado (18%):</span>
+          <strong class="code-font">{{ itbis|moneda_rd }}</strong>
+        </div>
+        <div class="financial-row">
+          <span class="text-muted">Descuento aplicado:</span>
+          <span class="code-font {% if descuento > 0 %}text-danger{% else %}text-muted{% endif %}">
+            {% if descuento > 0 %}− {{ descuento|moneda_rd }}{% else %}RD$ 0.00{% endif %}
+          </span>
+        </div>
+      </div>
+
+      {# Monto Total Liquidado (Navy Box) #}
+      <div class="grand-liquidated-box">
+        <div class="liquidated-header">
+          <span>MONTO TOTAL LIQUIDADO</span>
+          <span>Moneda Oficial (DOP)</span>
+        </div>
+        <div class="liquidated-amount code-font">
+          {{ total|moneda_rd }}
+        </div>
+      </div>
+
+      <footer class="cedula-footer text-muted">
+        <svg class="icon icon-xs" aria-hidden="true" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+        </svg>
+        <span>
+          {{ factura.total_conceptos }} concepto{{ factura.total_conceptos|pluralize }} facturado{{ factura.total_conceptos|pluralize }} incluido{{ factura.total_conceptos|pluralize }} en el timbrado fiscal ·
+          <strong>Certificación e-CF activa</strong>
+        </span>
+      </footer>
+    </section>
+
+    {# COLUMNA DERECHA: DICTAMEN FISCAL DGII #}
+    <section class="dictamen-card card" aria-labelledby="dictamen-title">
+      <header class="dictamen-header">
+        <div class="dictamen-header-title">
+          <svg class="icon icon-sm text-primary" aria-hidden="true" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+          </svg>
+          <h2 class="dictamen-title" id="dictamen-title">Dictamen Fiscal DGII</h2>
+        </div>
+        <span class="badge {% if es_aprobado %}badge-primary{% else %}badge-danger{% endif %} code-font">
+          {{ codigo_dictamen }}
+        </span>
+      </header>
+
+      {# Si está rechazado: Recuadro Rojo de Motivo y Acción Sugerida #}
+      {% if not es_aprobado %}
+      <div class="rejection-callout">
+        <div class="rejection-reason">
+          <svg class="icon icon-xs text-danger flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+          <div>
+            <strong>Motivo del Rechazo:</strong> {{ motivo_error }}
+          </div>
+        </div>
+        <div class="rejection-suggestion">
+          <strong>ACCIÓN CORRECTIVA SUGERIDA:</strong>
+          <p>{{ sugerencia_error }}</p>
+        </div>
+      </div>
+      {% endif %}
+
+      {# Metadatos del Dictamen #}
+      <div class="dictamen-meta-list">
+        <div class="dictamen-meta-row">
+          <span class="text-muted">Estado del Dictamen:</span>
+          {% if es_aprobado %}
+            <strong class="text-success">Aprobado (Aceptación plena)</strong>
+          {% else %}
+            <strong class="text-danger">Rechazado (Regla {{ regla_error }})</strong>
+          {% endif %}
+        </div>
+        <div class="dictamen-meta-row">
+          <span class="text-muted">Número de Transacción:</span>
+          <strong class="code-font">{{ track_id }}</strong>
+        </div>
+        <div class="dictamen-meta-row">
+          <span class="text-muted">Sello Criptográfico:</span>
+          <strong class="code-font text-success">XML-DSig RSA-SHA256 OK</strong>
+        </div>
+        <div class="dictamen-meta-row">
+          <span class="text-muted">Esquema XSD Oficial:</span>
+          <span class="code-font">e-CF v1.0 Standard RD</span>
+        </div>
+      </div>
+
+      {# Si está aprobado: Artefactos Fiscales Disponibles #}
+      {% if es_aprobado %}
+      <div class="artifacts-box">
+        <h3 class="artifacts-title">ARTEFACTOS FISCALES DISPONIBLES</h3>
+        <ul class="artifacts-list" role="list">
+          <li>
+            <svg class="icon icon-xs text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+            </svg>
+            <span>Representación Impresa PDF con código QR bidimensional generado.</span>
+          </li>
+          <li>
+            <svg class="icon icon-xs text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+            </svg>
+            <span>Documento XML firmado digitalmente bajo estándar XAdES/DSig.</span>
+          </li>
+          <li>
+            <svg class="icon icon-xs text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+            </svg>
+            <span>Registro archivado en log criptográfico e-CF.</span>
+          </li>
+        </ul>
+      </div>
+      {% endif %}
+
+      {# Acordeón: Inspección de Nodo XML Fiscal #}
+      <details class="xml-node-accordion" id="accordion-xml-fiscal">
+        <summary class="xml-node-summary">
+          <svg class="icon icon-xs text-muted" aria-hidden="true" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+          </svg>
+          <span>Inspección de Nodo XML Fiscal</span>
+        </summary>
+        <div class="xml-node-content">
+          <pre class="xml-code-box"><code class="code-font" id="xml-dictamen-code">{{ xml_dictamen }}</code></pre>
+          <div class="xml-node-footer">
+            <button type="button" class="btn btn-outline btn-xs" id="btn-copiar-xml-nodo">Copiar Nodo XML</button>
+          </div>
+        </div>
+      </details>
+    </section>
+  </div>
+
+  {# BARRA OPERACIONAL INFERIOR #}
+  <footer class="resultado-bottom-actions card">
+    <div class="actions-left-meta">
+      <div class="actions-icon-badge">
+        <svg class="icon icon-md text-primary" aria-hidden="true" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      </div>
+      <div>
+        <strong class="d-block text-heading">
+          {% if es_aprobado %}
+            Siguiente paso operacional
+          {% else %}
+            Corrección requerida
+          {% endif %}
+        </strong>
+        <span class="text-muted small">
+          {% if es_aprobado %}
+            El comprobante está disponible para descarga, consulta detallada y auditoría.
+          {% else %}
+            El e-CF fue denegado por el servicio tributario. Puede reutilizar los datos y corregir el receptor.
+          {% endif %}
+        </span>
+      </div>
+    </div>
+
+    <div class="actions-right-buttons">
+      {% if es_aprobado %}
+        <a href="{% url 'comprobantes:detalle' pk=factura.id %}" class="btn btn-primary">
+          <svg class="icon icon-xs" aria-hidden="true" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+          </svg>
+          Ver factura
+        </a>
+
+        <a href="{% url 'comprobantes:pdf' pk=factura.id %}" class="btn btn-outline-danger">
+          <svg class="icon icon-xs text-danger" aria-hidden="true" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+          </svg>
+          Ver representación PDF
+        </a>
+
+        <a href="{% url 'comprobantes:xml' pk=factura.id %}" class="btn btn-outline">
+          &lt;&gt; Ver XML firmado
+        </a>
+
+        <a href="{% url 'comprobantes:tipo' %}" class="btn btn-link">
+          Crear otra factura
+        </a>
+
+        <a href="{% url 'comprobantes:historial' %}" class="btn btn-link btn-link-arrow">
+          Ir al historial &rarr;
+        </a>
+      {% else %}
+        <a href="{% url 'comprobantes:detalle' pk=factura.id %}" class="btn btn-primary">
+          Ver detalle del comprobante
+        </a>
+
+        <a href="{% url 'comprobantes:tipo' %}" class="btn btn-outline">
+          <svg class="icon icon-xs" aria-hidden="true" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+          Crear nueva factura con estos datos
+        </a>
+
+        <a href="{% url 'comprobantes:xml' pk=factura.id %}" class="btn btn-outline">
+          &lt;&gt; Ver XML rechazado
+        </a>
+
+        <a href="{% url 'comprobantes:historial' %}" class="btn btn-link btn-link-arrow">
+          Ir al historial de comprobantes &rarr;
+        </a>
+      {% endif %}
+    </div>
+  </footer>
+
+</div>
+{% endblock %}

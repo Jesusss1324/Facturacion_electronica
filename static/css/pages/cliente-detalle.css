@@ -1,0 +1,49 @@
+@layer components {
+  .client-back { display: inline-block; font-size: var(--font-size-sm); margin-bottom: var(--space-5); text-decoration: none; }
+  .client-back:hover { text-decoration: underline; }
+  .client-profile { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-5); padding: var(--space-6); margin-bottom: var(--space-6); }
+  .client-profile > div:first-child { flex: 1 1 23rem; min-width: 0; }
+  .client-profile h1 { font-size: var(--font-size-xl); overflow-wrap: anywhere; }
+  .client-profile-meta { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); margin-top: var(--space-3); font-size: var(--font-size-xs); color: var(--color-muted); }
+  .client-profile-meta span { white-space: nowrap; }
+  .client-profile-meta .badge { font-size: var(--font-size-xs); }
+  .btn-badge { display: inline-flex; align-items: center; padding: .125rem .375rem; margin-left: var(--space-2); background: rgba(255 255 255 / 25%); border-radius: var(--radius-sm); font-size: .6875rem; font-weight: 700; letter-spacing: .04em; }
+  .client-inactive-notice { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-4); margin-bottom: var(--space-5); }
+  .client-inactive-notice > div { flex: 1 1 25rem; }
+  .client-inactive-notice p { font-size: var(--font-size-sm); margin-top: var(--space-1); }
+  .client-information, .client-invoices { overflow: hidden; margin-bottom: var(--space-6); }
+  .client-information .card-header, .client-invoices .card-header { background: var(--color-primary-soft); }
+  .client-information .card-header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-4); }
+  .client-section-heading { display: flex; align-items: center; gap: var(--space-3); }
+  .client-ecf-types { font-size: var(--font-size-xs); color: var(--color-success); white-space: nowrap; }
+  .client-ecf-types strong { color: var(--color-text); }
+  .client-information h2, .client-invoices h2 { font-size: var(--font-size-sm); }
+  .client-information header p, .client-invoices header p, .client-invoices header a { font-size: var(--font-size-xs); }
+  .client-information-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4); padding: var(--space-6); margin: 0; }
+  .client-information-grid > div { padding: var(--space-4); background: var(--color-background); border-radius: var(--radius-sm); }
+  .client-information-grid dt { text-transform: uppercase; font-size: .6875rem; letter-spacing: .04em; color: var(--color-muted); margin-bottom: var(--space-2); }
+  .client-information-grid dd { margin: 0; font-size: var(--font-size-sm); overflow-wrap: anywhere; }
+  .client-information-grid dd .icon { vertical-align: middle; width: 16px; height: 16px; margin-right: var(--space-1); opacity: .5; }
+  .client-address { grid-column: 1 / -1; }
+  .client-info-footer { display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--space-4); padding: var(--space-4) var(--space-6); border-top: 1px solid var(--color-border); font-size: var(--font-size-xs); color: var(--color-muted); }
+  .client-info-footer .icon { width: 14px; height: 14px; vertical-align: middle; margin-right: var(--space-1); }
+  .client-info-footer strong { color: var(--color-text); }
+  .client-invoice-table { min-width: 55rem; font-size: var(--font-size-xs); }
+  .client-invoice-table th { text-transform: uppercase; font-size: .6875rem; }
+  .client-invoice-table td { padding-block: var(--space-5); }
+  .client-invoice-table td:first-child { white-space: nowrap; font-weight: 600; }
+  .client-invoice-table .text-right { white-space: nowrap; }
+  .text-xs { font-size: var(--font-size-xs); }
+  .client-state-dialog h2 { font-size: var(--font-size-lg); margin-block: var(--space-4); }
+  .client-state-dialog p { color: var(--color-muted); }
+  .client-state-subtitle { font-size: var(--font-size-xs); text-transform: uppercase; letter-spacing: .04em; color: var(--color-muted); margin-bottom: var(--space-2); }
+  .client-state-note { font-size: var(--font-size-xs); background: var(--color-background); padding: var(--space-3) var(--space-4); border-radius: var(--radius-sm); margin-top: var(--space-4); line-height: 1.5; }
+  .client-invoices .empty-state .btn { margin-top: var(--space-4); }
+  @media (max-width: 40rem) {
+    .client-profile { padding: var(--space-4); }
+    .client-profile .page-actions { width: 100%; }
+    .client-profile .page-actions .btn { flex: 1 1 auto; }
+    .client-information-grid { grid-template-columns: 1fr; padding: var(--space-4); }
+    .client-info-footer { flex-direction: column; gap: var(--space-2); }
+  }
+}

@@ -1,0 +1,71 @@
+{% extends 'layouts/app.html' %}
+{% load static %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/pages/cliente-form.css' %}">{% endblock %}
+{% block extra_js %}<script src="{% static 'js/pages/cliente-form.js' %}" defer></script>{% endblock %}
+{% block page_header %}
+<header class="client-create-header">
+  <a class="back-link" href="{% url 'clientes:listado' %}">← Volver a clientes</a>
+  <div class="client-create-title"><h1>Nuevo cliente</h1><span class="badge badge-info">Registro e-CF</span></div>
+  <p class="text-muted">Registra la información tributaria y de contacto para la emisión de comprobantes electrónicos.</p>
+</header>
+{% endblock %}
+{% block content %}
+<div class="client-create">
+  {% if form.errors %}
+  <div class="alert alert-danger client-error-summary" role="alert" tabindex="-1" data-error-summary>
+    <strong>Revisa la información del cliente</strong>
+    <p>Corrige los campos señalados para continuar. Los datos ingresados se han conservado.</p>
+    {{ form.non_field_errors }}
+  </div>
+  {% endif %}
+  <section class="card">
+    <header class="card-header contributor-header">
+      <div class="contributor-heading"><span class="contributor-icon">{% include 'includes/icon.html' with name='users' %}</span><div><h2>Ficha de contribuyente</h2><p class="field-hint">Identificación, razón social y datos de contacto</p></div></div>
+      <span class="badge badge-success">● Estado inicial: Activo</span>
+    </header>
+    <form method="post" class="client-create-form" novalidate data-client-form>
+      {% csrf_token %}
+      <fieldset>
+        <legend><span>01. Identificación tributaria</span></legend>
+        <p class="required-note"><span aria-hidden="true">*</span> Campos obligatorios</p>
+        <div class="form-field document-type">
+          <span class="field-label" id="document-type-label">Tipo de documento fiscal <span class="text-danger">*</span></span>
+          <div class="document-options" role="radiogroup" aria-labelledby="document-type-label">
+            {% for radio in form.tipo_identificacion %}
+            <label class="document-option">{{ radio.tag }}<span><strong>{{ radio.choice_label }}</strong><small>{% if radio.data.value == 'RNC' %}Identificación de empresa · 9 dígitos{% else %}Identificación personal · 11 dígitos{% endif %}</small></span></label>
+            {% endfor %}
+          </div>
+          {% for error in form.tipo_identificacion.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+        </div>
+        <div class="form-field document-number">
+          <label for="{{ form.identificacion.id_for_label }}"><span data-document-label>{{ form.identificacion.label }}</span> <span class="text-danger">*</span></label>
+          {{ form.identificacion }}
+          <div id="identificacion-errors">{% for error in form.identificacion.errors %}<p class="field-error">{{ error }}</p>{% endfor %}</div>
+          <p class="field-hint" id="identificacion-help">Ingresa {% if form.tipo_identificacion.value == 'CEDULA' %}11{% else %}9{% endif %} números.</p>
+          <p class="field-hint" data-format-status role="status"></p>
+        </div>
+        {% if form.duplicate %}
+        <div class="alert alert-warning duplicate-notice">
+          <div><strong>Contribuyente ya registrado</strong><p>{{ form.duplicate.nombre }} · {{ form.duplicate.identificacion_display }}{% if not form.duplicate.activo %} · Inactivo{% endif %}</p></div>
+          <a href="{% url 'clientes:listado' %}?q={{ form.duplicate.identificacion|urlencode }}">Ver cliente existente →</a>
+        </div>
+        {% endif %}
+      </fieldset>
+      <fieldset>
+        <legend><span>02. Información del cliente</span></legend>
+        <div class="form-grid">
+          {% for field in form %}{% if field.name != 'tipo_identificacion' and field.name != 'identificacion' %}
+          <div class="form-field {% if field.name == 'nombre' or field.name == 'direccion' %}client-field-wide{% endif %}">
+            <label for="{{ field.id_for_label }}"><span {% if field.name == 'nombre' %}data-name-label{% endif %}>{{ field.label }}</span>{% if field.field.required %} <span class="text-danger">*</span>{% endif %}</label>
+            {{ field }}
+            <div id="{{ field.name }}-errors">{% for error in field.errors %}<p class="field-error">{{ error }}</p>{% endfor %}</div>
+            <p class="field-hint" id="{{ field.name }}-help">{% if field.name == 'nombre' %}Escribe el nombre tal como figura en sus documentos fiscales.{% elif field.name == 'telefono' %}Teléfono fijo o móvil de contacto (opcional).{% elif field.name == 'email' %}Correo de contacto para los comprobantes (opcional).{% else %}Calle, número, sector y ciudad del cliente (opcional).{% endif %}</p>
+          </div>
+          {% endif %}{% endfor %}
+        </div>
+      </fieldset>
+      <footer class="client-form-footer"><p class="field-hint">El cliente se registrará con estado activo.</p><div class="form-actions"><a class="btn btn-secondary" href="{% url 'clientes:listado' %}">Cancelar</a><button class="btn btn-primary" type="submit" data-save-client>{% include 'includes/icon.html' with name='plus' %}<span>Guardar cliente</span></button></div></footer>
+    </form>
+  </section>
+</div>
+{% endblock %}

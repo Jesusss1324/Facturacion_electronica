@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+{% block body %}
+<div class="public-shell {% block public_shell_class %}{% endblock %}">
+  {% block public_brand %}
+  <header class="public-brand">
+    <span class="brand-mark">{% include 'includes/icon.html' with name='invoices' %}</span>
+    <span>Facturación Electrónica</span>
+  </header>
+  {% endblock %}
+  <main class="public-content {% block public_content_class %}{% endblock %}" id="main-content" tabindex="-1">
+    {% include 'includes/messages.html' %}
+    {% block content %}{% endblock %}
+  </main>
+  {% block public_footer %}{% endblock %}
+</div>
+{% endblock %}

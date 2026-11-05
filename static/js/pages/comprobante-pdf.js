@@ -74,7 +74,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (btnPdfDownload) {
     btnPdfDownload.addEventListener('click', () => {
-      window.print();
+      window.location.assign(btnPdfDownload.dataset.downloadUrl);
     });
   }
 });

@@ -1,173 +1,118 @@
 # Facturación Electrónica
 
-Aplicación Django para la gestión de clientes y comprobantes electrónicos.
+Aplicación Django para gestionar clientes y demostrar el flujo de comprobantes electrónicos E31 y E32.
 
-## Estado de esta etapa
+## Estado actual
 
-Se ha preparado la **estructura de la interfaz**, con rutas, navegación, layouts
-y estilos compartidos. **UI-01 (inicio de sesión) está implementada** con
-autenticación de Django, validación de campos, errores de credenciales y
-redirección al inicio o a la sección solicitada.
+La interfaz incluye acceso, inicio con indicadores, directorio de clientes, alta, edición, detalle y cambio de estado. El asistente permite elegir tipo y receptor, completar datos generales, gestionar conceptos, calcular descuentos e ITBIS al 18%, confirmar totales y revisar el borrador.
 
-**UI-02 (Inicio) también está implementada**, con saludo del usuario, cuatro
-tarjetas de resumen y las cinco facturas más recientes. Los datos de negocio
-provienen de `frontend_data/`, un conjunto de registros en código que no consulta
-ni modifica SQLite. En desarrollo está habilitado el acceso local `user` / `1234`,
-definido en `usuarios/frontend_auth.py`, con una sesión en cookie firmada.
+También están implementadas las pantallas de procesamiento simulado, resultado, detalle de factura, historial, visualización XML y representación impresa, además de bitácora y marco legal. Las rutas de descarga XML y PDF devuelven archivos adjuntos para usuarios autenticados. El PDF se genera en el servidor con ReportLab y admite varias páginas; imprimir sigue siendo una acción independiente del visor.
 
-**UI-03 (Directorio de clientes) está implementada** con búsqueda por nombre o
-identificación, filtros, paginación y cambio de estado con confirmación. Incluye
-estados de carga, directorio vacío y búsqueda sin resultados.
+### Alcance de los datos
 
-**UI-04 (Crear cliente) está implementada** en `/clientes/nuevo/`: RNC o cédula,
-campos obligatorios, datos de contacto opcionales y detección de duplicados incluso
-para clientes inactivos. El alta se guarda en memoria y aparece en el directorio.
-Se comprueba el formato de la identificación, sin consultas ni certificación DGII.
+`frontend_data/` contiene las entidades que consumen las pantallas y un repositorio ORM persistente. Clientes, facturas, borradores, conceptos, totales confirmados y eventos se almacenan en `db.sqlite3`. Los cambios sobreviven a cierres y reinicios y son visibles desde otras instancias del programa que abran la misma base.
 
-**UI-05 (Detalle de cliente)** muestra la información del contribuyente, sus
-facturas recientes y las acciones de inactivar/reactivar con confirmación.
+La migración `frontend_data.0002_cargar_demo` carga una sola vez los 44 clientes, las 128 facturas y los 234 eventos originales, conservando identificadores, fechas, importes y estados. La marca `demo-v1` evita duplicaciones o restauraciones involuntarias: ejecutar de nuevo `migrate` o `cargar_demo` no sobrescribe ediciones ni repone registros eliminados. Si hay datos previos sin marca de carga, se detiene la importación sin sobrescribirlos.
 
-**UI-06 (Editar cliente)** permite actualizar datos, detectar cambios pendientes
-y validar duplicados. Al guardar vuelve al detalle del cliente.
+Los conceptos se conservan como instantáneas JSON ordenadas, con UUID y decimales serializados como texto; los importes de factura usan campos decimales. Las identificaciones y los e-NCF tienen restricciones únicas, y cada borrador puede vincularse a una sola factura. La pantalla usa las mismas entidades y plantillas que antes.
 
-**UI-07 (Tipo de comprobante)** permite seleccionar E31 o E32 y crea un borrador
-con UUID en memoria. Admite un cliente preseleccionado desde su detalle.
+La persistencia actual vive en los modelos de `frontend_data/models.py`; los modelos fiscales iniciales de `comprobantes/` y `emisores/` se conservan, sin duplicar allí los datos demo. Su integración con el circuito fiscal corresponde a la etapa siguiente. El repositorio en memoria se mantiene exclusivamente como alternativa explícita para pruebas unitarias (`FRONTEND_DATA_BACKEND="memory"`); la aplicación usa `sqlite` por defecto.
 
-**UI-08 (Selección de cliente)** incluye búsqueda, paginación, tarjetas de
-receptores, resumen del seleccionado y restricciones según tipo y estado.
-Permite registrar un cliente mediante un modal dentro del flujo.
+Los datos iniciales incluyen 44 clientes (42 activos) y 128 comprobantes (119 aprobados y 9 rechazados). Estos estados proceden de los registros de demostración.
 
-**UI-09 (Datos generales)** recoge fecha de emisión, tipo de ingreso, condiciones
-de pago, vencimiento para crédito y forma de pago. Guarda estos datos en el
-borrador antes de avanzar al paso de ítems.
+### Comportamiento de emisión local
 
-**UI-10 (Bienes y servicios)** permite agregar, editar y quitar conceptos del
-borrador, con cantidad, unidad, precio y descuento por línea. La vista previa se
-actualiza al editar y distingue los cambios sin guardar. Los cálculos usan
-`Decimal` en el servidor: importe redondeado a centavos, descuento antes de
-impuestos e ITBIS fijo del 18% para este paso. Incluye validación, confirmación
-de eliminación y control de versiones para evitar sobrescrituras entre pestañas.
-Las líneas se conservan al navegar y recargar mientras siga vivo el proceso.
+1. El servidor exige totales confirmados y una huella del borrador vigente; vuelve a comprobar conceptos, condiciones e importes y que el receptor esté activo.
+2. La primera emisión valida el borrador, reserva una secuencia local E31/E32 y guarda una factura en estado `generado` junto con una operación única. No se aprueba automáticamente ni se transmite información a la DGII.
+3. Un doble clic, reintento o solicitud simultánea del mismo borrador devuelve la misma factura, sin consumir otra secuencia. El borrador emitido no admite modificaciones.
+4. La relación borrador-factura se guarda en SQLite con una restricción única. Las escrituras usan transacciones IMMEDIATE y un tiempo de espera de 20 segundos para serializar cambios en esta instalación local, también entre procesos. La emisión repetida recupera la factura guardada después de reiniciar. Los contadores locales se guardan en `SecuenciaLocal`; los rangos fiscales autorizados y el circuito externo siguen pendientes.
+5. XML y PDF son representaciones de demostración, sin validez fiscal. El XML se construye con ElementTree para escapar nombres, direcciones y conceptos que contengan `&`, `<` o `>`. No se incluyen firmas ni certificados ficticios. La vista previa del borrador no asigna un e-NCF.
 
-**UI-11 (Totales y condiciones)** muestra el subtotal bruto, descuentos, base
-imponible, ITBIS y total, junto a las condiciones comerciales del borrador.
-Incluye desglose por concepto, ventana de detalle y guardado en memoria con fecha.
-Si las líneas o condiciones cambian después de guardar el resumen, se bloquea
-el avance hasta recalcular. Los POST vuelven a validar y calcular en el servidor;
-no aceptan importes enviados por el navegador y detectan cambios entre pestañas.
+### Comportamiento esperado de una integración real
 
-**UI-12 a UI-19 siguen pendientes:** revisión, emisión,
-resultados, documentos, historial y logs. Conservan sus direcciones reservadas
-y usan una plantilla temporal. Continuar desde UI-11 abre la ruta reservada de
-revisión; todavía no emite una factura ni asigna un e-NCF.
+La emisión deberá guardar un comprobante persistente e inmutable a partir del borrador validado, reservar una secuencia de forma atómica, generar y validar el XML contra el esquema aplicable y firmarlo con el certificado del emisor. Después deberá transmitirlo al servicio correspondiente, guardar la respuesta e identificador de seguimiento y consultar su resultado cuando corresponda.
 
-Las vistas pendientes responden con HTTP 501 y muestran «Sección en preparación».
-Las rutas privadas requieren una sesión; las acciones reservadas no modifican
-registros. Los modelos y las migraciones existentes se conservan.
+El estado debe reflejar el resultado efectivo de cada etapa: generado, firmado, enviado, aceptado o rechazado. Un tiempo de espera debe conservar la identidad de la operación para consultar o reintentar sin duplicar el comprobante; no equivale a una aceptación. Las descargas deberán corresponder al documento guardado de esa emisión. La bitácora deberá registrar las operaciones reales.
 
-El mapa completo y las convenciones para desarrollar cada pantalla están en
-[docs/estructura-ui.md](docs/estructura-ui.md). Ese documento conserva algunas
-descripciones de etapas anteriores; para el alcance actual, usar este README
-y las rutas implementadas en cada módulo.
-
-Las referencias visuales a padrón, DGII, secuencia e-NCF o timbrado no acreditan
-consultas ni emisiones reales desde estas pantallas. La integración definitiva
-y la verificación de reglas fiscales corresponden a la etapa de backend.
+Estas etapas externas, la validación XSD, el certificado, las reglas fiscales definitivas, el control de secuencias autorizado y la configuración de producción siguen pendientes. Los textos de simulación no acreditan una emisión fiscal.
 
 ## Desarrollo local (PowerShell)
 
-Requiere Python 3.12 o superior. Esta base se verificó con Django 6.0.8.
+Requiere Python 3.12 o superior. Dependencias en `requirements.txt`.
 
 ```powershell
 python -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -r requirements.txt
+.\.venv\Scripts\python.exe manage.py migrate --noinput
 .\.venv\Scripts\python.exe manage.py runserver
 ```
 
-Abre [Inicio de sesión](http://127.0.0.1:8000/acceso/iniciar-sesion/) con el
-usuario **user** y la contraseña **1234**.
-Este acceso está definido en código y no necesita migraciones ni crear usuarios
-en SQLite. Está habilitado con `DEBUG=True` y `FRONTEND_AUTH_ENABLED=True`;
-al desactivar este modo se vuelve a la autenticación habitual de Django.
-Al iniciar sesión verás `/inicio/` con el resumen y las facturas recientes.
-El usuario local tiene rol Emisor y no tiene permisos de administración.
+Abrir http://127.0.0.1:8000/acceso/iniciar-sesion/ con `user` / `1234`.
+El acceso local está definido en `usuarios/frontend_auth.py`, requiere `DEBUG=True` y `FRONTEND_AUTH_ENABLED=True` y utiliza cookies firmadas sin usuarios ni sesiones SQL. Al desactivarlo se utiliza la autenticación habitual de Django.
 
-## Datos de interfaz
+## Rutas principales
 
-`frontend_data/entities.py` define clientes, facturas, resúmenes y borradores;
-`fixtures.py` contiene los registros iniciales. `repository.py` ofrece la misma
-fuente para Inicio, Clientes y el asistente de facturación.
-Los 128 comprobantes, 119 aprobados,
-9 rechazados y 42 clientes activos se calculan a partir de los registros, sin
-mantener contadores independientes en el HTML.
+- `/inicio/`: indicadores y comprobantes recientes.
+- `/clientes/`, `/clientes/nuevo/`, `/clientes/<pk>/`, `/clientes/<pk>/editar/`: gestión de clientes.
+- `/facturas/nueva/tipo/`: selección E31/E32.
+- `/facturas/borradores/<uuid>/cliente/`, `datos/`, `items/`, `totales/`, `revision/`: pasos del borrador.
+- `/facturas/borradores/<uuid>/emitir/`: emisión local mediante POST con protección CSRF.
+- `/facturas/`: historial con búsqueda, filtros y paginación.
+- `/facturas/<pk>/`: detalle; sufijos `procesamiento/`, `resultado/`, `xml/`, `pdf/` para las pantallas posteriores.
+- `/facturas/<pk>/xml/descargar/` y `/facturas/<pk>/pdf/descargar/`: descargas autenticadas.
 
-El conjunto inicial contiene 44 clientes: 42 activos y 2 inactivos. Altas,
-ediciones, cambios de estado y borradores se guardan exclusivamente en memoria.
-Los cambios se pierden al reiniciar el proceso, incluida la recarga por cambios
-de código, y no se sincronizan entre procesos. Un enlace a un borrador anterior
-puede dejar de existir después de reiniciar. No se modifica SQLite.
-
-«Nueva factura» abre la selección de tipo. Al continuar se crea el borrador;
-la selección del cliente y los datos generales actualizan ese mismo registro.
-«Crear factura» desde un cliente conserva su identificador al entrar al asistente.
-
-```text
-/clientes/<pk>/                          UI-05 — Detalle
-/clientes/<pk>/editar/                   UI-06 — Edición
-/facturas/nueva/tipo/                    UI-07 — Tipo
-/facturas/borradores/<uuid>/cliente/      UI-08 — Cliente
-/facturas/borradores/<uuid>/datos/        UI-09 — Datos generales
-/facturas/borradores/<uuid>/items/        UI-10 — Bienes y servicios
-/facturas/borradores/<uuid>/totales/      UI-11 — Totales y condiciones
-/facturas/borradores/<uuid>/revision/     UI-12 — Pendiente
-```
-
-Esta etapa trabaja con datos locales en código. No se deben ejecutar cargas,
-migraciones ni modificaciones de modelos para implementar las siguientes
-pantallas. Los siguientes módulos usan `SimpleTestCase` y repositorios en
-memoria, sin crear una base de datos de pruebas:
-
-```powershell
-.\.venv\Scripts\python.exe manage.py test frontend_data.tests core.tests_dashboard
-.\.venv\Scripts\python.exe manage.py test usuarios.tests_frontend_auth
-.\.venv\Scripts\python.exe manage.py test clientes.tests clientes.tests_crear clientes.tests_detalle clientes.tests_editar
-.\.venv\Scripts\python.exe manage.py test comprobantes.tests_tipo comprobantes.tests_cliente comprobantes.tests_datos
-.\.venv\Scripts\python.exe manage.py test comprobantes.tests_items
-.\.venv\Scripts\python.exe manage.py test comprobantes.tests_totales
-```
-
-## Criterios para las próximas pantallas
-
-- Reutilizar el layout privado, la navegación, los iconos SVG y los componentes
-  de `static/css/global.css`.
-- Mantener azul marino, fondos claros, tarjetas blancas, bordes suaves,
-  tipografía compacta y acciones principales destacadas. Continuar con tarjetas
-  de contexto, secciones numeradas y adaptación a móvil.
-- Declarar ajustes específicos en `static/css/pages/`, dentro de la capa
-  `components`, y el comportamiento de cada pantalla en `static/js/pages/`.
-- Mantener textos propios de una aplicación real, sin etiquetas académicas ni
-  controles de prueba copiados de las referencias visuales.
-- Validar en el servidor aunque haya máscaras en el navegador. Conservar el
-  formato automático de RNC, cédula y teléfono, el escape HTML y los caracteres
-  legítimos de los textos, como apóstrofes.
-- Resolver búsqueda, filtros y paginación en el servidor. Al conectar la BD,
-  trasladarlos a consultas SQL eficientes con índices y restricciones de
-  unicidad; revisar planes de ejecución y evitar consultas repetidas por registro.
-  No descargar todo el directorio para filtrarlo en el navegador.
-- Usar el ORM o consultas parametrizadas al incorporar SQL. Eliminar comillas
-  o sanitizar textos no sustituye esa protección.
+Consultar los archivos `bitacora/urls.py` y `core/urls.py` para bitácora y marco legal. El mapa histórico de pantallas está en `docs/estructura-ui.md`; las rutas actuales y este README describen el alcance vigente.
 
 ## Comprobaciones
 
 ```powershell
 .\.venv\Scripts\python.exe manage.py check
-.\.venv\Scripts\python.exe manage.py findstatic css/global.css js/app.js
+.\.venv\Scripts\python.exe manage.py test --noinput
 ```
 
-El comando general `manage.py test` también descubre pruebas de otros módulos
-que pueden necesitar una base de datos de pruebas. Para esta etapa, utilizar
-los módulos indicados arriba.
+La suite general crea y destruye una base SQLite de pruebas; no usa la base de negocio. Los módulos de interfaz basados en `SimpleTestCase` usan repositorios en memoria. Las pruebas cubren acceso, validación, cálculos, navegación, emisión, documentos y controles de concurrencia.
 
-`static/` contiene los archivos fuente. `staticfiles/` se reserva para la salida
-de `collectstatic`. La configuración actual conserva el entorno local del
-proyecto; el despliegue se configurará por separado.
+## Organización y próximos pasos
+
+- `core/`, `templates/`, `static/`: estructura común, navegación, estilos y comportamiento del navegador.
+- `clientes/`, `comprobantes/`, `bitacora/`: formularios, vistas y pruebas de cada módulo.
+- `frontend_data/`: modelos y repositorio SQLite, carga inicial versionada, entidades y alternativa en memoria para pruebas.
+- `usuarios/`, `emisores/`, `dgii_mock/`: acceso y estructura de backend existente; el módulo mock no representa una conexión real.
+
+Paso 1 completado: almacenamiento SQLite con los datos originales y la interfaz actual. Paso 2 completado: operaciones locales, reserva de secuencias y recuperación. Próximos pasos: entidad local HTTP, validación XSD, certificados de desarrollo, recuperación de envíos y empaquetado Windows .exe. Las emisiones nuevas quedan pendientes de integración; este paso no implementa todavía las decisiones de la entidad fiscal. Al conectar SQL, trasladar búsqueda y paginación al ORM, conservar la validación del servidor y añadir restricciones de unicidad. `static/` contiene fuentes; `staticfiles/` se reserva para `collectstatic`. La configuración incluida es de desarrollo.
+
+
+## Conservación de datos
+
+La base `db.sqlite3` está excluida de Git. En otra computadora se crean las tablas y los datos iniciales con `manage.py migrate --noinput`. No se ejecutan migraciones ni se cargan fixtures durante una petición HTTP o al importar un módulo.
+
+Para respaldar esta etapa, cerrar el servidor y copiar `db.sqlite3` a una ubicación segura. No borrar el archivo para actualizar el código. La limpieza de la demostración se hará posteriormente de forma explícita; este cambio no incluye ninguna limpieza automática. El ejecutable y la ubicación definitiva de los datos por instalación corresponden a una etapa posterior.
+
+Las pruebas SQL de `frontend_data.tests_sqlite` comprueban carga única, conservación entre instancias y procesos, concurrencia de emisión, integridad de importes y UUID, restricciones y pantallas/descargas sin sustituir el repositorio. La autenticación local de desarrollo continúa como antes, con cookie firmada; la gestión definitiva de usuarios queda fuera de este paso.
+
+
+Los clientes, comprobantes y eventos ya no se generan desde listas Python: el único conjunto inicial está en `frontend_data/migrations/demo_v1.json`, utilizado para la primera migración y las pruebas. En ejecución se consulta SQLite. Los datos de la empresa emisora también se almacenan en `ConfiguracionEmisor` y se consultan desde las vistas; `emisor_v1.json` sólo inicializa instalaciones nuevas. Se eliminaron los casos especiales por importe de factura que reemplazaban los valores calculados por ejemplos fijos.
+
+
+## Paso 2: operaciones, secuencias y recuperación
+
+Cada emisión nueva crea, en una sola transacción SQLite IMMEDIATE, una factura, una operación con UUID, una reserva por tipo E31/E32 y un evento de bitácora. Las restricciones únicas vinculan el borrador, la factura y la reserva. La secuencia siguiente se inicializa una sola vez a partir del mayor e-NCF existente; después avanza por contador persistente, sin recalcularse por el número de facturas. No se reutilizan reservas al reiniciar ni al repetir una solicitud. Un fallo dentro de la transacción inicial revierte todo. Una operación ya confirmada conserva su número aunque falle la preparación posterior.
+
+`SecuenciaLocal` permite desactivar un contador, indicar un límite o un vencimiento. El servicio rechaza reservas agotadas, vencidas, desactivadas o que colisionen con el historial. Estos contadores son de desarrollo y no equivalen a rangos autorizados por DGII. No hay pantalla de administración de rangos en esta etapa.
+
+La operación conserva una instantánea de emisor, receptor, conceptos e importes. El XML local se prepara desde esa instantánea, se guarda con su SHA-256 y se reutiliza en las descargas. Las modificaciones posteriores del cliente o de la configuración no cambian el XML reservado.
+
+Estados actuales de operación:
+
+- `pendiente`: en cola para preparar el documento local.
+- `procesando`: un trabajador dispone de un token y un bloqueo temporal de 60 segundos.
+- `preparada`: XML representativo guardado; pendientes XSD, firma y entidad local.
+- `consultar`: hay una marca de envío con resultado incierto; no se retransmite automáticamente.
+
+Al arrancar `manage.py runserver`, se recuperan bloqueos vencidos y se inicia un trabajador local que revisa la cola cada 2 segundos. Un bloqueo vigente se respeta, incluso si otro proceso arranca. Un trabajador cuyo token haya vencido no puede guardar su resultado encima del de otro. Los errores de preparación se guardan con un próximo intento y espera creciente, hasta 30 minutos. Cerrar y abrir el navegador no crea otra operación.
+
+El mismo procesamiento está disponible con `manage.py procesar_emisiones` (una pasada) o `manage.py procesar_emisiones --continuo`. Otros despliegues, incluido el futuro ejecutable, deberán iniciar este trabajador junto con el servidor; no se hacen consultas SQL en `AppConfig.ready`.
+
+La pantalla `/facturas/<pk>/procesamiento/` muestra el estado real de la operación y consulta su estado sin modificar registros. El reintento local requiere POST y CSRF. Los parámetros de simulación no fuerzan una aceptación para las operaciones nuevas. La pantalla de resultado redirige al seguimiento mientras no existe una respuesta externa.
+
+La recuperación de un trabajo local interrumpido lo devuelve a la cola. Si hay una marca persistente de envío, lo mueve a `consultar`: la próxima integración deberá consultar a la entidad antes de decidir un reenvío del mismo documento. En este paso no hay llamadas de red, certificado, firma, validación XSD ni aceptación/rechazo externos. El historial de demostración anterior permanece intacto.

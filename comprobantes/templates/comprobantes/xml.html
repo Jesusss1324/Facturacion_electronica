@@ -35,7 +35,7 @@
         <span id="btn-copiar-xml-label">Copiar XML completo</span>
       </button>
 
-      <button type="button" class="btn btn-primary btn-sm btn-download-xml" id="btn-descargar-xml-file" data-filename="e-CF_{{ factura.e_ncf }}.xml">
+      <button type="button" class="btn btn-primary btn-sm btn-download-xml" id="btn-descargar-xml-file" data-filename="e-CF_{{ factura.e_ncf }}.xml" data-download-url="{% url 'comprobantes:descargar_xml' factura.id %}">
         <svg class="icon icon-xs" aria-hidden="true" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
         </svg>
@@ -69,7 +69,7 @@
       <div class="meta-card-body">
         <span class="meta-card-label">ESTÁNDAR & ESQUEMA</span>
         <strong class="meta-card-title">DGII e-CF v1.0</strong>
-        <span class="meta-card-sub text-success">Esquema XSD Validado ✔</span>
+        <span class="meta-card-sub text-success">Sin validación XSD</span>
       </div>
     </div>
 
@@ -80,9 +80,9 @@
         </svg>
       </div>
       <div class="meta-card-body">
-        <span class="meta-card-label">SELLO DIGITAL XML-DSIG</span>
-        <strong class="meta-card-title code-font">RSA-SHA256</strong>
-        <span class="meta-card-sub text-muted">Certificado X.509 Autorizado</span>
+        <span class="meta-card-label">FIRMA DIGITAL</span>
+        <strong class="meta-card-title code-font">Sin firma digital</strong>
+        <span class="meta-card-sub text-muted">Documento de demostración</span>
       </div>
     </div>
 
@@ -182,32 +182,32 @@
         {# Nodo 3: Signature #}
         <details class="inspector-node" open>
           <summary class="node-summary">
-            <strong class="node-tag">&lt;Signature&gt;</strong>
-            <span class="badge badge-success-subtle">Firma Digital Válida</span>
+            <strong class="node-tag">Firma no disponible</strong>
+            <span class="badge badge-success-subtle">Sin firma digital</span>
           </summary>
           <div class="node-details">
             <div class="node-item">
               <span class="node-lbl">Algoritmo:</span>
-              <span class="code-font">rsa-sha256</span>
+              <span class="code-font">Pendiente</span>
             </div>
             <div class="node-item">
               <span class="node-lbl">Canonicalización:</span>
-              <span class="code-font">xml-c14n-20010315</span>
+              <span class="code-font">Pendiente</span>
             </div>
             <div class="node-item">
               <span class="node-lbl">Transform:</span>
-              <span class="code-font">enveloped-signature</span>
+              <span class="code-font">Pendiente</span>
             </div>
             <div class="node-item">
               <span class="node-lbl">Emisor Cert:</span>
-              <span class="small text-muted">DGII CA Raíz Digital</span>
+              <span class="small text-muted">Sin certificado configurado</span>
             </div>
           </div>
         </details>
 
         {# Enlaces rápidos operacionales #}
         <div class="inspector-actions">
-          <button type="button" class="btn btn-outline btn-sm w-100" id="btn-descargar-xml-secondary" data-filename="e-CF_{{ factura.e_ncf }}.xml">
+          <button type="button" class="btn btn-outline btn-sm w-100" id="btn-descargar-xml-secondary" data-filename="e-CF_{{ factura.e_ncf }}.xml" data-download-url="{% url 'comprobantes:descargar_xml' factura.id %}">
             Descargar archivo .xml
           </button>
           <a href="{% url 'comprobantes:pdf' pk=factura.id %}" class="btn btn-link btn-sm w-100 text-center">

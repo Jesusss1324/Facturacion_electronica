@@ -1,3 +1,4 @@
+from .draft_access import BorradorEditableMixin
 from datetime import timedelta
 import unicodedata
 from urllib.parse import urlencode
@@ -73,7 +74,7 @@ class TipoComprobanteView(LoginRequiredMixin, FormView):
         return HttpResponseRedirect(next_url)
 
 
-class SeleccionarClienteView(LoginRequiredMixin, View):
+class SeleccionarClienteView(BorradorEditableMixin, LoginRequiredMixin, View):
     template_name = 'comprobantes/cliente.html'
 
     def dispatch(self, request, *args, **kwargs):
@@ -262,7 +263,7 @@ class SeleccionarClienteView(LoginRequiredMixin, View):
         )
 
 
-class DatosGeneralesView(LoginRequiredMixin, FormView):
+class DatosGeneralesView(BorradorEditableMixin, LoginRequiredMixin, FormView):
     template_name = 'comprobantes/datos.html'
     form_class = DatosGeneralesForm
     http_method_names = ['get', 'post', 'head', 'options']

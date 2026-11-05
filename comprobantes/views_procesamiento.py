@@ -1,6 +1,6 @@
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.http import Http404, HttpResponseBadRequest, HttpResponseRedirect
+from django.http import Http404, HttpResponseBadRequest, HttpResponseRedirect, JsonResponse
 from django.shortcuts import render
 from django.urls import reverse
 from django.views import View
@@ -9,7 +9,7 @@ from frontend_data import get_repository
 
 
 class EmitirComprobanteView(LoginRequiredMixin, View):
-    """Acción POST para emitir y timbrar formalmente un borrador e-CF."""
+    """Acción POST para simular la emisión local de un borrador."""
     http_method_names = ['post', 'options']
 
     def post(self, request, *args, **kwargs):
@@ -30,7 +30,12 @@ class EmitirComprobanteView(LoginRequiredMixin, View):
                 reverse('comprobantes:revision', kwargs={'borrador_id': borrador_id})
             )
 
-        messages.success(request, f'Comprobante {factura.e_ncf} emitido exitosamente.')
+        operacion = repository.get_operacion_factura(factura.id)
+        if operacion is not None:
+            from frontend_data.emission import procesar_pendientes
+            procesar_pendientes(operacion_id=operacion.id)
+
+        messages.success(request, f'Operación guardada para {factura.e_ncf}; puedes consultar su estado.')
         return HttpResponseRedirect(
             reverse('comprobantes:procesamiento', kwargs={'pk': factura.id})
         )
@@ -49,6 +54,11 @@ class ProcesamientoFacturaView(LoginRequiredMixin, View):
             cliente = repository.get_cliente(factura.cliente_id)
         except KeyError as error:
             raise Http404('Factura o cliente no encontrado.') from error
+
+        operacion = repository.get_operacion_factura(factura.id)
+        if operacion is not None:
+            return render(request, 'comprobantes/operacion.html', {
+                'factura': factura, 'cliente': cliente, 'operacion': operacion})
 
         simular_error = request.GET.get('simular_error')
         if simular_error == 'validacion' or factura.estado == 'rechazado':
@@ -82,3 +92,35 @@ class ProcesamientoFacturaView(LoginRequiredMixin, View):
             'pasos_pipeline': pasos_pipeline,
         }
         return render(request, self.template_name, context)
+
+
+class EstadoOperacionView(LoginRequiredMixin, View):
+    http_method_names = ['get', 'head', 'options']
+
+    def get(self, request, pk):
+        operacion = get_repository().get_operacion_factura(pk)
+        if operacion is None:
+            raise Http404('Operación no encontrada.')
+        response = JsonResponse({'id': str(operacion.id), 'estado': operacion.estado,
+                                 'e_ncf': operacion.e_ncf})
+        response['Cache-Control'] = 'no-store'
+        return response
+
+
+class ReanudarOperacionView(LoginRequiredMixin, View):
+    http_method_names = ['post', 'options']
+
+    def post(self, request, pk):
+        from django.db import transaction
+        from django.utils import timezone
+        from frontend_data.emission import procesar_pendientes
+        from frontend_data.models import OperacionEmision
+        with transaction.atomic():
+            operacion = OperacionEmision.objects.filter(factura_id=pk).first()
+            if operacion is None:
+                raise Http404('Operación no encontrada.')
+            if operacion.estado == 'pendiente' and not operacion.envio_iniciado:
+                operacion.proximo_intento = timezone.now()
+                operacion.save(update_fields=['proximo_intento'])
+        procesar_pendientes(operacion_id=operacion.id)
+        return HttpResponseRedirect(reverse('comprobantes:procesamiento', kwargs={'pk': pk}))

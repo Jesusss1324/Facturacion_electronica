@@ -91,15 +91,15 @@ class InterfaceStructureTests(TestCase):
             with self.subTest(name=name):
                 self.assertEqual(self.client.post(self.screen_url(name)).status_code, 405)
 
-    def test_pending_downloads_never_serve_fake_documents(self):
+    def test_document_downloads_require_login_and_serve_attachments(self):
         for name in ['comprobantes:descargar_xml', 'comprobantes:descargar_pdf']:
             with self.subTest(name=name):
                 url = reverse(name, kwargs={'pk': 1})
                 self.assertEqual(self.client.get(url).status_code, 302)
                 self.client.force_login(self.user)
                 response = self.client.get(url)
-                self.assertEqual(response.status_code, 501)
-                self.assertNotIn('Content-Disposition', response.headers)
+                self.assertEqual(response.status_code, 200)
+                self.assertIn('attachment;', response.headers['Content-Disposition'])
                 self.client.logout()
 
     def test_logout_requires_post_and_ends_session(self):

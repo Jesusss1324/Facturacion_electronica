@@ -1,21 +1,18 @@
 from django.urls import path
 
 from core.views import (
-    PendingActionView,
-    PendingDownloadView,
-    ProtectedPendingScreenView,
     ProtectedRedirectView,
 )
 from .views import DatosGeneralesView, SeleccionarClienteView, TipoComprobanteView
 from .views_detalle import DetalleFacturaView
 from .views_historial import HistorialFacturasView
 from .views_items import BienesServiciosView
-from .views_pdf import RepresentacionImpresaPdfView
-from .views_procesamiento import EmitirComprobanteView, ProcesamientoFacturaView
+from .views_pdf import RepresentacionImpresaPdfView, DescargarPdfView
+from .views_procesamiento import EmitirComprobanteView, ProcesamientoFacturaView, EstadoOperacionView, ReanudarOperacionView
 from .views_resultado import ResultadoEmisionView
 from .views_revision import RevisionFacturaView
 from .views_totales import TotalesCondicionesView
-from .views_xml import DocumentoXmlView
+from .views_xml import DocumentoXmlView, DescargarXmlView
 
 app_name = 'comprobantes'
 
@@ -32,9 +29,11 @@ urlpatterns = [
     path('borradores/<uuid:borrador_id>/emitir/', EmitirComprobanteView.as_view(), name='emitir'),
     path('<int:pk>/', DetalleFacturaView.as_view(), name='detalle'),
     path('<int:pk>/procesamiento/', ProcesamientoFacturaView.as_view(), name='procesamiento'),
+    path('<int:pk>/operacion/estado/', EstadoOperacionView.as_view(), name='estado_operacion'),
+    path('<int:pk>/operacion/reanudar/', ReanudarOperacionView.as_view(), name='reanudar_operacion'),
     path('<int:pk>/resultado/', ResultadoEmisionView.as_view(), name='resultado'),
     path('<int:pk>/xml/', DocumentoXmlView.as_view(), name='xml'),
     path('<int:pk>/pdf/', RepresentacionImpresaPdfView.as_view(), name='pdf'),
-    path('<int:pk>/xml/descargar/', PendingDownloadView.as_view(), name='descargar_xml'),
-    path('<int:pk>/pdf/descargar/', PendingDownloadView.as_view(), name='descargar_pdf'),
+    path('<int:pk>/xml/descargar/', DescargarXmlView.as_view(), name='descargar_xml'),
+    path('<int:pk>/pdf/descargar/', DescargarPdfView.as_view(), name='descargar_pdf'),
 ]

@@ -1,4 +1,4 @@
-"""Datos locales de interfaz, independientes de los modelos y de SQLite."""
+"""Datos de la aplicación; SQLite por defecto y entidades comunes para la interfaz."""
 
 from .repository import get_repository
 

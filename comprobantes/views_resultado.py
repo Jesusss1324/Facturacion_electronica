@@ -2,7 +2,8 @@ from decimal import Decimal
 from zoneinfo import ZoneInfo
 
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.http import Http404
+from django.http import Http404, HttpResponseRedirect
+from django.urls import reverse
 from django.shortcuts import render
 from django.views import View
 
@@ -22,6 +23,9 @@ class ResultadoEmisionView(LoginRequiredMixin, View):
         except KeyError as error:
             raise Http404('Factura o cliente no encontrado.') from error
 
+        if repository.get_operacion_factura(factura.id) is not None:
+            return HttpResponseRedirect(reverse('comprobantes:procesamiento', kwargs={'pk': factura.id}))
+
         # Estado del comprobante
         simular = request.GET.get('simular_estado')
         if simular in {'aprobado', 'rechazado'}:
@@ -37,11 +41,10 @@ class ResultadoEmisionView(LoginRequiredMixin, View):
         itbis = total - base
         descuento = Decimal('0.00')
 
-        # Si el monto total es exactamente 336,890.00 (el caso de referencia de las imágenes)
-        if total == Decimal('336890.00'):
-            base = Decimal('285500.00')
-            itbis = Decimal('51390.00')
-            descuento = Decimal('10000.00')
+        if factura.lineas:
+            from .items import resumen_lineas
+            resumen = resumen_lineas(factura.lineas)
+            base, itbis, descuento = resumen['base'], resumen['itbis'], resumen['descuento']
 
         # Formato de fecha
         fecha_emision = factura.fecha_emision

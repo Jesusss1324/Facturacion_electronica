@@ -1,3 +1,4 @@
+from .draft_access import BorradorEditableMixin
 from dataclasses import asdict
 from uuid import UUID, uuid4
 
@@ -14,7 +15,7 @@ from frontend_data.entities import LineaFactura
 from .items import LineaFacturaForm, resumen_lineas
 
 
-class BienesServiciosView(LoginRequiredMixin, View):
+class BienesServiciosView(BorradorEditableMixin, LoginRequiredMixin, View):
     http_method_names = ['get', 'post', 'head', 'options']
     template_name = 'comprobantes/items.html'
 

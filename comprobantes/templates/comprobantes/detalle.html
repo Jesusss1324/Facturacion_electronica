@@ -33,7 +33,7 @@
       </button>
 
       <a href="{% url 'comprobantes:xml' pk=factura.id %}" class="btn btn-outline btn-sm" title="Consultar XML del comprobante">
-        <span>&lt;&gt; {% if es_rechazado %}Ver XML Rechazado{% else %}Ver XML Firmado{% endif %}</span>
+        <span>&lt;&gt; {% if es_rechazado %}Ver XML Rechazado{% else %}Ver XML{% endif %}</span>
       </a>
 
       <a href="{% url 'comprobantes:descargar_pdf' pk=factura.id %}" class="btn btn-primary btn-sm btn-download-pdf" title="Descargar archivo PDF oficial">

@@ -1,4 +1,24 @@
 document.addEventListener('DOMContentLoaded', () => {
+  const operacion = document.querySelector('[data-operacion-url]');
+  if (operacion) {
+    const poll = async () => {
+      try {
+        const response = await fetch(operacion.dataset.operacionUrl, { cache: 'no-store' });
+        if (response.ok) {
+          const data = await response.json();
+          if (data.estado !== operacion.dataset.operacionEstado) {
+            window.location.reload();
+            return;
+          }
+        }
+      } catch { /* Se conserva el estado mostrado hasta recuperar conexión. */ }
+      if (['pendiente', 'procesando'].includes(operacion.dataset.operacionEstado)) {
+        setTimeout(poll, 3000);
+      }
+    };
+    if (['pendiente', 'procesando'].includes(operacion.dataset.operacionEstado)) setTimeout(poll, 3000);
+    return;
+  }
   const container = document.querySelector('.processing-page-container');
   if (!container) return;
 

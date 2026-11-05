@@ -17,6 +17,7 @@ from .totales import huella_borrador
     FRONTEND_AUTH_ENABLED=True,
     SESSION_ENGINE='django.contrib.sessions.backends.signed_cookies',
 )
+@override_settings(FRONTEND_DATA_BACKEND="memory")
 class DetalleFacturaTests(SimpleTestCase):
     def setUp(self):
         source = get_repository()
@@ -75,7 +76,7 @@ class DetalleFacturaTests(SimpleTestCase):
         self.assertContains(response, 'Volver al historial')
         self.assertContains(response, 'FACSIMIL TRIBUTARIO DIGITAL · LEY 32-23')
         self.assertContains(response, 'Imprimir Factura')
-        self.assertContains(response, 'Ver XML Firmado')
+        self.assertContains(response, 'Ver XML')
         self.assertContains(response, 'Descargar PDF Oficial')
 
         # No debe mostrar alertas de rechazo ni anulación

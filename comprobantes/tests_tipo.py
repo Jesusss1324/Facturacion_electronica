@@ -7,6 +7,7 @@ from frontend_data.repository import FrontendRepository
 
 
 @override_settings(DEBUG=True, FRONTEND_AUTH_ENABLED=True, SESSION_ENGINE='django.contrib.sessions.backends.signed_cookies')
+@override_settings(FRONTEND_DATA_BACKEND="memory")
 class TipoComprobanteTests(SimpleTestCase):
     def setUp(self):
         original = get_repository()

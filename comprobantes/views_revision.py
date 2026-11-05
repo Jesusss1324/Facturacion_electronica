@@ -1,3 +1,4 @@
+from .draft_access import BorradorEditableMixin
 from datetime import date, datetime
 from zoneinfo import ZoneInfo
 
@@ -9,11 +10,12 @@ from django.urls import reverse
 from django.views import View
 
 from frontend_data import get_repository
-from .revision import EMISOR_INFO, generar_xml_ecf, monto_en_letras
+from .revision import generar_xml_ecf, monto_en_letras
+from frontend_data.configuration import get_emisor_info
 from .totales import huella_borrador, revisar_borrador
 
 
-class RevisionFacturaView(LoginRequiredMixin, View):
+class RevisionFacturaView(BorradorEditableMixin, LoginRequiredMixin, View):
     http_method_names = ['get', 'post', 'head', 'options']
     template_name = 'comprobantes/revision.html'
 
@@ -80,22 +82,22 @@ class RevisionFacturaView(LoginRequiredMixin, View):
 
         checklist = [
             {'num': 1, 'titulo': 'Tipo e-CF Verificado', 'valor': f'E{self.borrador.tipo_ecf} {self.borrador.tipo_display}'},
-            {'num': 2, 'titulo': 'RNC/Cédula Activo en DGII', 'valor': self.cliente.identificacion_display},
+            {'num': 2, 'titulo': 'Identificación local del cliente', 'valor': self.cliente.identificacion_display},
             {'num': 3, 'titulo': 'Medios & Plazos de Pago', 'valor': f'{self.borrador.forma_pago} Transferencia - {self.borrador.tipo_pago_display}'},
             {'num': 4, 'titulo': 'Conceptos Auditados', 'valor': f'{len(self.borrador.lineas)} Ítems (18% ITBIS)'},
-            {'num': 5, 'titulo': 'Reglas RN-01.48', 'valor': 'Exacto (Sin Desviación)'},
-            {'num': 6, 'titulo': 'Certificado Digital', 'valor': 'Firma SHA-256 Válida'},
+            {'num': 5, 'titulo': 'Totales del borrador', 'valor': 'Confirmados localmente'},
+            {'num': 6, 'titulo': 'Certificado Digital', 'valor': 'Pendiente de integración; sin firma digital'},
         ]
 
         return {
             'borrador': self.borrador,
             'cliente': self.cliente,
             'resumen': self.resumen,
-            'emisor': EMISOR_INFO,
+            'emisor': get_emisor_info(),
             'huella': huella,
             'huella_corta': huella_corta,
             'monto_letras': monto_en_letras(self.resumen['total']),
-            'xml_raw': generar_xml_ecf(self.borrador, self.cliente, self.resumen, EMISOR_INFO),
+            'xml_raw': generar_xml_ecf(self.borrador, self.cliente, self.resumen, get_emisor_info()),
             'fecha_emision_display': fecha_emision_display,
             'fecha_vencimiento_display': fecha_vencimiento_display,
             'secuencia_encf': self.borrador.secuencia_encf_display,

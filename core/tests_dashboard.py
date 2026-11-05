@@ -3,7 +3,7 @@ from decimal import Decimal
 from unittest.mock import patch
 
 from django.contrib.auth.models import AnonymousUser
-from django.test import RequestFactory, SimpleTestCase
+from django.test import override_settings, RequestFactory, SimpleTestCase
 from django.urls import resolve, reverse
 
 from frontend_data.repository import FrontendRepository, get_repository
@@ -12,6 +12,7 @@ from usuarios.models import Usuario
 from .templatetags.ui_format import moneda_rd
 
 
+@override_settings(FRONTEND_DATA_BACKEND="memory")
 class InicioTests(SimpleTestCase):
     # SimpleTestCase prohíbe acceder a la BD: ni fixtures SQL ni usuarios guardados.
     def setUp(self):

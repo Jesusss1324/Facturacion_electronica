@@ -10,6 +10,7 @@ from .items import resumen_lineas
 
 
 @override_settings(DEBUG=True, FRONTEND_AUTH_ENABLED=True, SESSION_ENGINE='django.contrib.sessions.backends.signed_cookies')
+@override_settings(FRONTEND_DATA_BACKEND="memory")
 class BienesServiciosTests(SimpleTestCase):
     def setUp(self):
         source = get_repository()

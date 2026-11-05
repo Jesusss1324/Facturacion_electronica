@@ -1,3 +1,4 @@
+from .draft_access import BorradorEditableMixin
 from decimal import Decimal
 
 from django.contrib import messages
@@ -11,7 +12,7 @@ from frontend_data import get_repository
 from .totales import huella_borrador, revisar_borrador
 
 
-class TotalesCondicionesView(LoginRequiredMixin, View):
+class TotalesCondicionesView(BorradorEditableMixin, LoginRequiredMixin, View):
     http_method_names = ['get', 'post', 'head', 'options']
     template_name = 'comprobantes/totales.html'
 

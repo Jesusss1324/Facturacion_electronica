@@ -1,3 +1,4 @@
+from frontend_data.configuration import get_emisor_info
 import csv
 from datetime import datetime
 from decimal import Decimal
@@ -12,14 +13,6 @@ from django.views import View
 from frontend_data import get_repository
 from frontend_data.entities import ResumenFactura
 
-EMISOR_INFO = {
-    'razon_social': 'SOLUCIONES TECNOLÓGICAS DEL CARIBE, SRL',
-    'nombre_comercial': 'Soluciones Tecnológicas del Caribe',
-    'rnc': '1-30-98765-4',
-    'rnc_raw': '130987654',
-    'direccion': 'Av. Winston Churchill #1099, Torre Empresarial Piantini, Piso 14',
-    'sucursal': '01 Principal D.N.',
-}
 
 
 def obtener_items_resumen(factura):
@@ -37,31 +30,6 @@ def obtener_items_resumen(factura):
             })
         subtotal = sum(l.base for l in factura.lineas)
         return items, subtotal
-    elif total == Decimal('336890.00'):
-        items = [
-            {
-                'numero': '01',
-                'concepto': 'Licencia de Software Empresarial e-CF v2',
-                'cantidad': Decimal('2.00'),
-                'monto': Decimal('210000.00'),
-                'itbis_nota': 'ITBIS 18% · Gravado',
-            },
-            {
-                'numero': '02',
-                'concepto': 'Servicios de Consultoría de Integración Fiscal',
-                'cantidad': Decimal('1.00'),
-                'monto': Decimal('75500.00'),
-                'itbis_nota': 'ITBIS 18% · Gravado',
-            },
-            {
-                'numero': '03',
-                'concepto': 'Mantenimiento de Servidores Mock DGII',
-                'cantidad': Decimal('1.00'),
-                'monto': Decimal('51390.00'),
-                'itbis_nota': 'ITBIS Exento',
-            },
-        ]
-        return items, Decimal('285500.00')
     else:
         base = (total / Decimal('1.18')).quantize(Decimal('0.01'))
         items = [
@@ -225,7 +193,7 @@ class HistorialFacturasView(LoginRequiredMixin, View):
             expediente = {
                 'factura': f,
                 'cliente': c,
-                'emisor': EMISOR_INFO,
+                'emisor': get_emisor_info(),
                 'items': items_list,
                 'total_items': len(items_list),
                 'subtotal_gravado': subtotal_gravado,

@@ -9,7 +9,8 @@ from django.urls import reverse
 from frontend_data import get_repository
 from frontend_data.entities import LineaFactura
 from frontend_data.repository import FrontendRepository
-from .revision import EMISOR_INFO, generar_xml_ecf, monto_en_letras
+from .revision import generar_xml_ecf, monto_en_letras
+from frontend_data.configuration import get_emisor_info
 from .totales import huella_borrador
 
 
@@ -18,6 +19,7 @@ from .totales import huella_borrador
     FRONTEND_AUTH_ENABLED=True,
     SESSION_ENGINE='django.contrib.sessions.backends.signed_cookies',
 )
+@override_settings(FRONTEND_DATA_BACKEND="memory")
 class RevisionFacturaTests(SimpleTestCase):
     def setUp(self):
         source = get_repository()
@@ -107,8 +109,8 @@ class RevisionFacturaTests(SimpleTestCase):
         self.assertEqual(response.status_code, 200)
 
         # Cabecera de emisor y e-NCF
-        self.assertContains(response, 'SOLUCIONES DIGITALES DEL CARIBE, SRL')
-        self.assertContains(response, '1-31-89012-3')
+        self.assertContains(response, 'SOLUCIONES TECNOLÓGICAS DEL CARIBE, SRL')
+        self.assertContains(response, '1-30-98765-4')
         self.assertContains(response, 'FACTURA ELECTRÓNICA DGII')
         self.assertContains(response, 'FACTURA DE CRÉDITO FISCAL ELECTRÓNICA')
         self.assertContains(response, self.borrador.secuencia_encf_display)
@@ -178,9 +180,9 @@ class RevisionFacturaTests(SimpleTestCase):
     def test_generar_xml_ecf_unit(self):
         resumen = {'bruto': Decimal('10000.00'), 'descuento': Decimal('1000.00'), 'base': Decimal('9000.00'), 'itbis': Decimal('1620.00'), 'total': Decimal('10620.00')}
         borrador = self.repo.get_borrador(self.borrador_id)
-        xml = generar_xml_ecf(borrador, self.cliente, resumen, EMISOR_INFO)
+        xml = generar_xml_ecf(borrador, self.cliente, resumen, get_emisor_info())
         self.assertIn('<TipoeCF>31</TipoeCF>', xml)
-        self.assertIn('<RNCEmisor>131890123</RNCEmisor>', xml)
+        self.assertIn('<RNCEmisor>130987654</RNCEmisor>', xml)
         self.assertIn(f'<RNCComprador>{self.cliente.identificacion}</RNCComprador>', xml)
         self.assertIn('<MontoTotal>10620.00</MontoTotal>', xml)
         self.assertIn('<NombreItem>Consultoría Tecnológica Especializada</NombreItem>', xml)

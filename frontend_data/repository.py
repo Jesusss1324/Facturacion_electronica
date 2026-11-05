@@ -6,7 +6,6 @@ from uuid import uuid4
 from zoneinfo import ZoneInfo
 
 from .entities import BorradorFactura, Cliente, EventoLog, ResumenFactura, ResumenInicio
-from .fixtures import build_clientes, build_facturas, build_logs
 
 
 class FrontendRepository:
@@ -17,6 +16,7 @@ class FrontendRepository:
         self._logs = {log.id: log for log in logs}
         self._identificaciones = {cliente.identificacion: cliente.id for cliente in clientes}
         self._borradores = {}
+        self._emisiones = {}
         self._write_lock = RLock()
         self._facturas_por_cliente = {}
         for factura in self.list_facturas():
@@ -88,9 +88,16 @@ class FrontendRepository:
     def get_borrador(self, borrador_id):
         return self._borradores[borrador_id]
 
+    def factura_emitida_borrador(self, borrador_id):
+        with self._write_lock:
+            factura_id = self._emisiones.get(borrador_id)
+            return self._facturas.get(factura_id)
+
     def update_borrador(self, borrador_id, **datos):
         with self._write_lock:
             actual = self.get_borrador(borrador_id)
+            if borrador_id in self._emisiones:
+                raise ValueError('El borrador ya fue emitido y no se puede modificar.')
             actualizado = replace(actual, **datos)
             self._borradores[borrador_id] = actualizado
             return actualizado
@@ -140,9 +147,12 @@ class FrontendRepository:
 
     def emitir_factura(self, borrador_id, huella=None):
         from .entities import Factura
+        from comprobantes.totales import huella_borrador, revisar_borrador
         with self._write_lock:
             borrador = self.get_borrador(borrador_id)
-            if huella and borrador.huella_totales != huella:
+            if borrador_id in self._emisiones:
+                return self._facturas[self._emisiones[borrador_id]]
+            if not huella or borrador.huella_totales != huella or huella_borrador(borrador) != huella:
                 raise ValueError('El borrador fue modificado antes de emitir.')
             if borrador.totales_guardados is None:
                 raise ValueError('Debes calcular y confirmar los totales antes de emitir.')
@@ -150,8 +160,13 @@ class FrontendRepository:
             if not cliente.activo:
                 raise ValueError('El cliente receptor está inactivo.')
 
+            resumen_actual, errores = revisar_borrador(borrador)
+            if errores or dict(borrador.totales_guardados) != resumen_actual:
+                raise ValueError('Revisa y confirma los totales actualizados antes de emitir.')
+
             nuevo_id = max(self._facturas.keys(), default=0) + 1
-            cuenta_tipo = sum(1 for f in self._facturas.values() if f.tipo_ecf == borrador.tipo_ecf) + 1
+            cuenta_tipo = max((int(f.e_ncf[3:]) for f in self._facturas.values()
+                               if f.tipo_ecf == borrador.tipo_ecf and f.e_ncf[3:].isdigit()), default=0) + 1
             e_ncf = f'E{borrador.tipo_ecf}{cuenta_tipo:010d}'
             resumen = dict(borrador.totales_guardados)
 
@@ -173,8 +188,12 @@ class FrontendRepository:
                 fecha_vencimiento=borrador.fecha_vencimiento,
             )
             self._facturas[nuevo_id] = factura
+            self._emisiones[borrador_id] = nuevo_id
             self._facturas_por_cliente.setdefault(cliente.id, []).insert(0, factura)
             return factura
+
+    def get_operacion_factura(self, factura_id):
+        return None
 
     def list_facturas(self):
         return tuple(sorted(self._facturas.values(), key=lambda item: (item.fecha_emision, item.id), reverse=True))
@@ -256,8 +275,18 @@ class FrontendRepository:
 
 
 @lru_cache(maxsize=1)
-def get_repository():
+def get_demo_repository():
+    # Importación sólo al solicitar explícitamente el repositorio de pruebas.
+    from .fixtures import build_clientes, build_facturas, build_logs
     clientes = build_clientes()
     facturas = build_facturas(clientes)
     logs = build_logs(clientes, facturas)
     return FrontendRepository(clientes=clientes, facturas=facturas, logs=logs)
+
+
+def get_repository():
+    from django.conf import settings
+    if settings.FRONTEND_DATA_BACKEND == 'memory':
+        return get_demo_repository()
+    from .sqlite_repository import SQLiteRepository
+    return SQLiteRepository()

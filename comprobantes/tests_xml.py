@@ -18,7 +18,39 @@ from .views_xml import construir_xml_factura
     FRONTEND_AUTH_ENABLED=True,
     SESSION_ENGINE='django.contrib.sessions.backends.signed_cookies',
 )
+@override_settings(FRONTEND_DATA_BACKEND="memory")
 class DocumentoXmlTests(SimpleTestCase):
+    def test_xml_roundtrips_special_characters_without_injected_elements(self):
+        from dataclasses import replace
+        from xml.etree.ElementTree import fromstring
+        from .revision import generar_xml_ecf
+        from .items import resumen_lineas
+        value = 'Compañía & Hijos <especial> "SRL"'
+        cliente = replace(self.repo.get_cliente(1), nombre=value, direccion=value)
+        linea = LineaFactura(uuid4(), 'servicio', value, value, 'Servicio',
+                             Decimal('1'), Decimal('100'), Decimal('0'))
+        factura = replace(self.factura, lineas=(linea,), monto_total=linea.total)
+        borrador = replace(self.repo.create_borrador('31', cliente.id), lineas=(linea,))
+        for xml in (construir_xml_factura(factura, cliente),
+                    generar_xml_ecf(borrador, cliente, resumen_lineas((linea,)))):
+            root = fromstring(xml)
+            ns = {'e': 'http://dgii.gov.do/ecf/v1.0'}
+            self.assertEqual(root.find('.//e:RazonSocialComprador', ns).text, value)
+            self.assertEqual(root.find('.//e:NombreItem', ns).text, value)
+            self.assertEqual(root.find('.//e:DescripcionItem', ns).text, value)
+            self.assertNotIn('<especial>', xml)
+
+    def test_download_serves_the_same_parseable_xml_as_preview(self):
+        from xml.etree.ElementTree import fromstring
+        self.client.post('/acceso/iniciar-sesion/', {'username': 'user', 'password': '1234'})
+        response = self.client.get(reverse('comprobantes:descargar_xml', kwargs={'pk': self.factura.id}))
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('attachment;', response['Content-Disposition'])
+        self.assertTrue(response['Content-Type'].startswith('application/xml'))
+        self.assertEqual(response.content.decode(), construir_xml_factura(
+            self.factura, self.repo.get_cliente(self.factura.cliente_id)))
+        fromstring(response.content)
+
     def setUp(self):
         source = get_repository()
         self.repo = FrontendRepository(source.list_clientes(), source.list_facturas())
@@ -52,15 +84,15 @@ class DocumentoXmlTests(SimpleTestCase):
         # Metadatos del encabezado y cards
         self.assertContains(response, self.factura.e_ncf)
         self.assertContains(response, 'DGII e-CF v1.0')
-        self.assertContains(response, 'Esquema XSD Validado ✔')
-        self.assertContains(response, 'RSA-SHA256')
-        self.assertContains(response, 'SELLO DIGITAL XML-DSIG')
+        self.assertContains(response, 'Sin validación XSD')
+        self.assertContains(response, 'Sin firma digital')
+        self.assertContains(response, 'FIRMA DIGITAL')
 
         # Estructura del visor de código
         self.assertContains(response, f'e-CF_{self.factura.e_ncf}.xml')
         self.assertContains(response, '&lt;eCF xmlns=&quot;http://dgii.gov.do/ecf/v1.0&quot;')
         self.assertContains(response, '&lt;Encabezado&gt;')
-        self.assertContains(response, '&lt;Signature')
+        self.assertNotContains(response, '&lt;Signature')
 
         # Botones de acción
         self.assertContains(response, 'Volver a la factura')
@@ -77,9 +109,9 @@ class DocumentoXmlTests(SimpleTestCase):
         self.assertIn(f'<eNCF>{self.factura.e_ncf}</eNCF>', xml)
         self.assertIn(f'<RNCEmisor>130987654</RNCEmisor>', xml)
         self.assertIn(f'<RNCComprador>{cliente.identificacion}</RNCComprador>', xml)
-        self.assertIn('<Signature xmlns="http://www.w3.org/2000/09/xmldsig#">', xml)
-        self.assertIn('<DigestValue>', xml)
-        self.assertIn('<SignatureValue>', xml)
+        self.assertNotIn('<Signature', xml)
+        self.assertIn('DEMOSTRACION LOCAL', xml)
+        self.assertNotIn('<SignatureValue>', xml)
         self.assertIn('</eCF>', xml)
 
     def test_emitted_invoice_custom_items_rendered_in_xml(self):

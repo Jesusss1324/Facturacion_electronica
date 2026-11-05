@@ -36,6 +36,8 @@ INSTALLED_APPS = [
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
+    # Debe preceder staticfiles para activar runserver con recuperación local.
+    'frontend_data',
     'django.contrib.staticfiles',
     'core',
     'usuarios',
@@ -87,6 +89,7 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': BASE_DIR / 'db.sqlite3',
+        'OPTIONS': {'timeout': 20, 'transaction_mode': 'IMMEDIATE'},
     }
 }
 
@@ -148,3 +151,6 @@ MAILERS = {
         'BACKEND': 'django.core.mail.backends.console.EmailBackend',
     },
 }
+
+# SQLite para la aplicación; memoria sólo para pruebas unitarias aisladas.
+FRONTEND_DATA_BACKEND = 'sqlite'

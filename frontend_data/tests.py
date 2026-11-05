@@ -1,11 +1,12 @@
 from decimal import Decimal
 
-from django.test import SimpleTestCase
+from django.test import override_settings, SimpleTestCase
 
 from .fixtures import build_clientes, build_facturas
 from .repository import FrontendRepository, get_repository
 
 
+@override_settings(FRONTEND_DATA_BACKEND="memory")
 class FrontendDataTests(SimpleTestCase):
     def test_fixture_totals_are_derived_from_actual_records(self):
         repository = get_repository()

@@ -17,7 +17,17 @@ from .totales import huella_borrador
     FRONTEND_AUTH_ENABLED=True,
     SESSION_ENGINE='django.contrib.sessions.backends.signed_cookies',
 )
+@override_settings(FRONTEND_DATA_BACKEND="memory")
 class RepresentacionImpresaPdfTests(SimpleTestCase):
+    def test_download_is_a_pdf_attachment_and_unknown_invoice_returns_404(self):
+        self.client.post('/acceso/iniciar-sesion/', {'username': 'user', 'password': '1234'})
+        response = self.client.get(reverse('comprobantes:descargar_pdf', kwargs={'pk': self.factura.id}))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Content-Type'], 'application/pdf')
+        self.assertIn('attachment;', response['Content-Disposition'])
+        self.assertTrue(response.content.startswith(b'%PDF-'))
+        self.assertEqual(self.client.get(reverse('comprobantes:descargar_pdf', kwargs={'pk': 99999})).status_code, 404)
+
     def setUp(self):
         source = get_repository()
         self.repo = FrontendRepository(source.list_clientes(), source.list_facturas())
@@ -67,7 +77,7 @@ class RepresentacionImpresaPdfTests(SimpleTestCase):
         # Contenido fiscal impreso en el papel
         self.assertContains(response, 'REPÚBLICA DOMINICANA')
         self.assertContains(response, 'DATOS DEL RECEPTOR')
-        self.assertContains(response, 'CÓDIGO QR OFICIAL DGII')
+        self.assertContains(response, 'QR ILUSTRATIVO')
         self.assertContains(response, 'CANTIDAD EN LETRAS')
         self.assertContains(response, 'TOTAL FACTURA')
         self.assertContains(response, 'Página 1 de 1 — Representación Gráfica e-CF')

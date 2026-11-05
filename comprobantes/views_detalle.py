@@ -1,3 +1,4 @@
+from frontend_data.configuration import get_emisor_info
 from decimal import Decimal
 from zoneinfo import ZoneInfo
 
@@ -9,15 +10,6 @@ from django.views import View
 from frontend_data import get_repository
 from .revision import monto_en_letras
 
-EMISOR_INFO = {
-    'razon_social': 'SOLUCIONES TECNOLÓGICAS DEL CARIBE, SRL',
-    'rnc': '1-30-98765-4',
-    'direccion_linea1': 'Av. Winston Churchill #1099, Torre Empresarial Piantini, Piso 14',
-    'direccion_linea2': 'Santo Domingo, Distrito Nacional, República Dominicana',
-    'telefono': '(809) 555-0199',
-    'email': 'facturacion@solucionescaribe.com.do',
-    'sublinea': 'Régimen General de Tributación · Sucursal 01: Principal D.N. · Punto de Emisión: 01',
-}
 
 
 class DetalleFacturaView(LoginRequiredMixin, View):
@@ -33,8 +25,9 @@ class DetalleFacturaView(LoginRequiredMixin, View):
         except KeyError as error:
             raise Http404('Factura o cliente no encontrado.') from error
 
+        operacion = repository.get_operacion_factura(factura.id)
         # Estado del comprobante (permite preview mediante simular_estado o estado)
-        simular = request.GET.get('simular_estado') or request.GET.get('estado')
+        simular = None if operacion else (request.GET.get('simular_estado') or request.GET.get('estado'))
         if simular in {'aprobado', 'rechazado', 'anulado'}:
             estado = simular
         else:
@@ -99,54 +92,6 @@ class DetalleFacturaView(LoginRequiredMixin, View):
                     'total_neto': neto,
                 })
             monto_total_calc = base_imponible + itbis_total
-        elif total == Decimal('336890.00'):
-            # Ítems canónicos de referencia DGII
-            items = [
-                {
-                    'numero': '01',
-                    'concepto': 'Servicios de Consultoría y Arquitectura Cloud e-CF',
-                    'descripcion': 'Auditoría de endpoints, modelado de certificados digitales X.509 y esquema DGII v1.0',
-                    'unidad_display': 'Glb',
-                    'tipo_unidad': '(Servicio)',
-                    'cantidad': Decimal('1.00'),
-                    'precio': Decimal('150000.00'),
-                    'descuento': Decimal('0.00'),
-                    'itbis_pct': '18%',
-                    'itbis_liq': Decimal('27000.00'),
-                    'total_neto': Decimal('177000.00'),
-                },
-                {
-                    'numero': '02',
-                    'concepto': 'Servidor Rack ProLiant DL380 Gen10 (Infraestructura)',
-                    'descripcion': 'Procesador Xeon Silver, 64GB RAM, controladora Smart Array para storage fiscal',
-                    'unidad_display': 'Ud',
-                    'tipo_unidad': '(Bien)',
-                    'cantidad': Decimal('1.00'),
-                    'precio': Decimal('100000.00'),
-                    'descuento': Decimal('10000.00'),
-                    'itbis_pct': '18%',
-                    'itbis_liq': Decimal('16200.00'),
-                    'total_neto': Decimal('106200.00'),
-                },
-                {
-                    'numero': '03',
-                    'concepto': 'Suscripción Licenciamiento Certificado SSL Wildcard Anual',
-                    'descripcion': 'Emisión DigiCert para dominio transaccional e-CF corporativo',
-                    'unidad_display': 'Ud',
-                    'tipo_unidad': '(Servicio)',
-                    'cantidad': Decimal('1.00'),
-                    'precio': Decimal('45000.00'),
-                    'descuento': Decimal('0.00'),
-                    'itbis_pct': '18%',
-                    'itbis_liq': Decimal('8190.00'),
-                    'total_neto': Decimal('53190.00'),
-                },
-            ]
-            subtotal_bruto = Decimal('295000.00')
-            descuento_total = Decimal('10000.00')
-            base_imponible = Decimal('285500.00')
-            itbis_total = Decimal('51390.00')
-            monto_total_calc = Decimal('336890.00')
         else:
             # Factura del fixture con desglose proporcional
             base = (total / Decimal('1.18')).quantize(Decimal('0.01'))
@@ -181,7 +126,7 @@ class DetalleFacturaView(LoginRequiredMixin, View):
         context = {
             'factura': factura,
             'cliente': cliente,
-            'emisor': EMISOR_INFO,
+            'emisor': get_emisor_info(),
             'estado': estado,
             'es_aprobado': estado == 'aprobado',
             'es_rechazado': estado == 'rechazado',

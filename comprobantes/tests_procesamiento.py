@@ -17,6 +17,7 @@ from .totales import huella_borrador
     FRONTEND_AUTH_ENABLED=True,
     SESSION_ENGINE='django.contrib.sessions.backends.signed_cookies',
 )
+@override_settings(FRONTEND_DATA_BACKEND="memory")
 class ProcesamientoFacturaTests(SimpleTestCase):
     def setUp(self):
         source = get_repository()
@@ -115,7 +116,47 @@ class ProcesamientoFacturaTests(SimpleTestCase):
     FRONTEND_AUTH_ENABLED=True,
     SESSION_ENGINE='django.contrib.sessions.backends.signed_cookies',
 )
+@override_settings(FRONTEND_DATA_BACKEND="memory")
 class EmitirComprobanteTests(SimpleTestCase):
+    def test_emitted_draft_pages_redirect_to_existing_invoice(self):
+        from contextlib import ExitStack
+        factura = self.repo.emitir_factura(self.borrador.id, self.huella)
+        with ExitStack() as stack:
+            for module in ('draft_access', 'views', 'views_items', 'views_totales', 'views_revision'):
+                stack.enter_context(patch(f'comprobantes.{module}.get_repository', return_value=self.repo))
+            for step in ('cliente', 'datos', 'items', 'totales', 'revision'):
+                url = reverse(f'comprobantes:{step}', kwargs={'borrador_id': self.borrador.id})
+                for method in (self.client.get, self.client.post):
+                    with self.subTest(step=step, method=method.__name__):
+                        self.assertRedirects(method(url), reverse('comprobantes:detalle', kwargs={'pk': factura.id}),
+                                             fetch_redirect_response=False)
+
+    def test_repeated_posts_return_the_same_invoice(self):
+        before = len(self.repo.list_facturas())
+        first = self.client.post(self.emitir_url, {'huella': self.huella})
+        second = self.client.post(self.emitir_url, {'huella': self.huella})
+        self.assertEqual(first.status_code, 302)
+        self.assertEqual(first['Location'], second['Location'])
+        self.assertEqual(len(self.repo.list_facturas()), before + 1)
+
+    def test_concurrent_emissions_create_only_one_invoice(self):
+        from concurrent.futures import ThreadPoolExecutor
+        before = len(self.repo.list_facturas())
+        with ThreadPoolExecutor(max_workers=8) as executor:
+            results = list(executor.map(
+                lambda _: self.repo.emitir_factura(self.borrador.id, self.huella), range(16)))
+        self.assertEqual(len({factura.id for factura in results}), 1)
+        self.assertEqual(len(self.repo.list_facturas()), before + 1)
+        with self.assertRaises(ValueError):
+            self.repo.update_borrador(self.borrador.id, tipo_pago='credito')
+
+    def test_missing_hash_and_changed_draft_cannot_emit(self):
+        with self.assertRaises(ValueError):
+            self.repo.emitir_factura(self.borrador.id)
+        self.repo.update_borrador(self.borrador.id, forma_pago='01')
+        with self.assertRaises(ValueError):
+            self.repo.emitir_factura(self.borrador.id, self.huella)
+
     def setUp(self):
         source = get_repository()
         self.repo = FrontendRepository(source.list_clientes(), source.list_facturas())

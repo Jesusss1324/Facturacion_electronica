@@ -43,7 +43,7 @@
         </svg>
         <span>Imprimir</span>
       </button>
-      <button type="button" class="btn btn-primary btn-sm btn-download-pdf-doc" id="btn-pdf-download">
+      <button type="button" class="btn btn-primary btn-sm btn-download-pdf-doc" id="btn-pdf-download" data-download-url="{% url 'comprobantes:descargar_pdf' factura.id %}">
         <svg class="icon icon-xs" aria-hidden="true" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
         </svg>
@@ -256,11 +256,11 @@
                 </svg>
               </div>
               <div class="qr-info">
-                <span class="qr-tag">CÓDIGO QR OFICIAL DGII</span>
+                <span class="qr-tag">QR ILUSTRATIVO</span>
                 <p class="qr-help">
-                  Escaneo fiscal para consulta inmediata en sede institucional DGII.
+                  Referencia visual de demostración; sin consulta fiscal.
                 </p>
-                <span class="qr-security code-font">Firma XML-DSig RSA-SHA256</span>
+                <span class="qr-security code-font">Sin firma digital</span>
               </div>
             </div>
             <div class="paper-letras-block">
@@ -309,7 +309,7 @@
         {# PIE DE PÁGINA LEGAL #}
         <div class="paper-bottom-legal">
           <span>Página 1 de 1 — Representación Gráfica e-CF según Ley No. 32-23 y Decreto 254-06</span>
-          <span>DGII RD · Certificación Fiscal Activa</span>
+          <span>Demostración local · Sin validez fiscal</span>
         </div>
 
       </div>

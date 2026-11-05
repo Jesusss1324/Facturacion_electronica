@@ -13,6 +13,7 @@ from frontend_data.repository import FrontendRepository
     FRONTEND_AUTH_ENABLED=True,
     SESSION_ENGINE='django.contrib.sessions.backends.signed_cookies',
 )
+@override_settings(FRONTEND_DATA_BACKEND="memory")
 class ResultadoEmisionTests(SimpleTestCase):
     def setUp(self):
         source = get_repository()

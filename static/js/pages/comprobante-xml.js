@@ -44,22 +44,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  function descargarXml(filename) {
-    if (!hiddenPayload) return;
-    const xmlTexto = hiddenPayload.value || '';
-    if (!xmlTexto) return;
-
-    const blob = new Blob([xmlTexto], { type: 'application/xml;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = filename || 'e-CF.xml';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-  }
-
   if (btnCopiarCompleto) {
     btnCopiarCompleto.addEventListener('click', () => {
       copiarXml(btnCopiarCompleto, labelCopiarCompleto);
@@ -74,13 +58,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (btnDescargarXml) {
     btnDescargarXml.addEventListener('click', () => {
-      descargarXml(btnDescargarXml.dataset.filename);
+      window.location.assign(btnDescargarXml.dataset.downloadUrl);
     });
   }
 
   if (btnDescargarXmlSecondary) {
     btnDescargarXmlSecondary.addEventListener('click', () => {
-      descargarXml(btnDescargarXmlSecondary.dataset.filename);
+      window.location.assign(btnDescargarXmlSecondary.dataset.downloadUrl);
     });
   }
 });

@@ -7,10 +7,10 @@ from django import forms
 class CrearClienteForm(forms.Form):
     tipo_identificacion = forms.ChoiceField(label='Tipo de documento fiscal', choices=[('RNC', 'RNC (Empresa / Jurídico)'), ('CEDULA', 'Cédula (Persona física)')], initial='RNC', widget=forms.RadioSelect)
     identificacion = forms.CharField(label='RNC', max_length=20, error_messages={'required': 'Ingresa el RNC o la cédula.'})
-    nombre = forms.CharField(label='Razón social o nombre de la empresa', max_length=200, error_messages={'required': 'Ingresa la razón social o el nombre completo.'})
+    nombre = forms.CharField(label='Razón social o nombre de la empresa', max_length=150, error_messages={'required': 'Ingresa la razón social o el nombre completo.'})
     telefono = forms.CharField(label='Teléfono', max_length=25, required=False)
     email = forms.EmailField(label='Correo electrónico para e-CF', max_length=254, required=False, error_messages={'invalid': 'Ingresa un correo electrónico válido.'})
-    direccion = forms.CharField(label='Dirección comercial o domicilio fiscal', max_length=500, required=False, widget=forms.Textarea(attrs={'rows': 3}))
+    direccion = forms.CharField(label='Dirección comercial o domicilio fiscal', max_length=100, required=False, widget=forms.Textarea(attrs={'rows': 3}))
 
     def __init__(self, *args, repository, **kwargs):
         super().__init__(*args, **kwargs)
@@ -87,7 +87,7 @@ class EditarClienteForm(forms.Form):
     )
     nombre = forms.CharField(
         label='Razón social o nombre completo registrado',
-        max_length=200,
+        max_length=150,
         error_messages={'required': 'Ingresa la razón social o el nombre completo.'},
     )
     email = forms.EmailField(
@@ -103,7 +103,7 @@ class EditarClienteForm(forms.Form):
     )
     direccion = forms.CharField(
         label='Dirección comercial / domicilio fiscal',
-        max_length=500,
+        max_length=100,
         required=False,
         widget=forms.Textarea(attrs={'rows': 2}),
     )

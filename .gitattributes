@@ -1,0 +1,2 @@
+# Preservar los bytes originales descargados y sus huellas SHA-256.
+dgii_mock/schemas/*.xsd -text

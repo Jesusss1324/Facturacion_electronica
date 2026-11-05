@@ -81,10 +81,10 @@ def recuperar_interrumpidas():
     """Sólo recupera bloqueos vencidos; nunca roba trabajo a un proceso vivo."""
     ahora = timezone.now()
     expiradas = Q(bloqueo_hasta__lte=ahora) | Q(bloqueo_hasta__isnull=True)
-    ops = OperacionEmision.objects.filter(estado='procesando').filter(expiradas)
+    ops = OperacionEmision.objects.filter(estado__in=['procesando', 'enviando', 'consultando']).filter(expiradas)
     recuperadas = 0
     for op in ops:
-        op.estado = 'consultar' if op.envio_iniciado else 'pendiente'
+        op.estado = 'consultar' if op.envio_iniciado or op.estado in ('enviando', 'consultando') else 'pendiente'
         op.bloqueo_token = None
         op.bloqueo_hasta = None
         op.proximo_intento = ahora

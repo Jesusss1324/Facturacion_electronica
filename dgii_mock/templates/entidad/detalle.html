@@ -1,0 +1,8 @@
+{% extends 'entidad/base.html' %}{% block content %}
+<h1>{{ recepcion.encf }}</h1><p class="status">{{ recepcion.estado }}</p>
+<dl><dt>Identificador de seguimiento</dt><dd><code>{{ recepcion.track_id }}</code></dd><dt>Emisor</dt><dd>{{ recepcion.emisor }}</dd><dt>Recibido</dt><dd>{{ recepcion.recibida|date:'d/m/Y H:i:s' }}</dd><dt>SHA-256 del documento original</dt><dd><code>{{ recepcion.sha256 }}</code></dd></dl>
+{% if recepcion.estado == 'recibido' %}<form method="post" action="{% url 'entidad:procesar' recepcion.track_id %}">{% csrf_token %}<button type="submit">Procesar ahora</button></form><p>La recepción está pendiente de validación. Esta acción manual también funciona con el procesamiento automático pausado.</p>{% endif %}
+<h2>Comprobaciones documentadas</h2><div class="table-wrap"><table><thead><tr><th>Comprobación</th><th>Resultado</th><th>Origen</th><th>Detalle</th></tr></thead><tbody>{% for c in recepcion.comprobaciones %}<tr><td>{{ c.codigo }}</td><td>{{ c.estado }}</td><td>{{ c.origen }}</td><td>{{ c.detalle }}</td></tr>{% empty %}<tr><td colspan="4">Las comprobaciones se ejecutarán al procesar esta recepción.</td></tr>{% endfor %}</tbody></table></div>
+<h2>Documento recibido</h2><details><summary>Mostrar XML original</summary><pre>{{ recepcion.xml }}</pre></details>
+<h2>Historial</h2><ol>{% for a in auditoria %}<li>{{ a.fecha|date:'d/m/Y H:i:s' }} · {{ a.accion }} · {{ a.detalle }}</li>{% endfor %}</ol>
+<p><a href="{% url 'entidad:panel' %}">Volver al panel</a></p>{% endblock %}

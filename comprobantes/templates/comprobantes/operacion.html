@@ -10,19 +10,27 @@
   <p>Identificador de operación: <code>{{ operacion.id }}</code></p>
   <p>La secuencia está reservada. Puedes cerrar el programa y volver a consultar esta misma operación.</p>
   {% if operacion.estado == 'preparada' %}
-    <p>Documento local guardado. La validación XSD, la firma y la conexión con la entidad local se implementarán en las próximas etapas. No existe una aceptación fiscal.</p>
+    <p>Documento local guardado y listo para enviar a la entidad local.</p>
+  {% elif operacion.estado == 'validado_sin_firma' %}
+    <p>La entidad local validó el contenido y las reglas del perfil E31/E32. La firma criptográfica sigue pendiente. No existe aceptación ni validez fiscal.</p>
+  {% elif operacion.estado == 'rechazado' or operacion.estado == 'conflicto' %}
+    <p>La entidad detuvo esta operación. Consulta las comprobaciones y el detalle del error; la reserva no se reutiliza ni se reemplaza automáticamente.</p>
   {% elif operacion.estado == 'consultar' %}
-    <p>Se detectó un envío con resultado desconocido. Se conserva el documento y su secuencia. Hay que consultar la recepción antes de decidir un reenvío; la conexión de consulta aún está pendiente.</p>
+    <p>El resultado del envío es desconocido. Se consultará la recepción antes de decidir un reenvío del mismo documento y secuencia.</p>
   {% else %}
     <p>La preparación pendiente se recupera automáticamente mientras el servidor está abierto.</p>
   {% endif %}
   {% if operacion.ultimo_error %}<p role="alert">{{ operacion.ultimo_error }}</p>{% endif %}
   <form method="post" action="{% url 'comprobantes:reanudar_operacion' factura.id %}">{% csrf_token %}
     {% if operacion.estado == 'pendiente' %}<button class="btn btn-primary" type="submit">Reanudar preparación</button>{% endif %}
+    {% if operacion.estado == 'consultar' %}<button class="btn btn-primary" type="submit">Consultar recepción ahora</button>{% endif %}
   </form>
   <a href="{% url 'comprobantes:detalle' factura.id %}" class="btn btn-outline">Ver comprobante</a>
   {% if operacion.xml %}<a href="{% url 'comprobantes:descargar_xml' factura.id %}" class="btn btn-outline">Descargar XML guardado</a>{% endif %}
 </section>
+{% if operacion.resultado_entidad.trackId %}<section class="card"><h2>Recepción en la entidad local</h2><p>Seguimiento: <code>{{ operacion.resultado_entidad.trackId }}</code></p>
+<p><a href="{{ local_entity_panel_url }}recepciones/{{ operacion.resultado_entidad.trackId }}/" target="_blank" rel="noopener">Abrir detalle en el panel de la entidad</a></p>
+<ul>{% for c in operacion.resultado_entidad.comprobaciones %}<li><strong>{{ c.codigo }} · {{ c.estado }}</strong>: {{ c.detalle }}</li>{% empty %}<li>El documento fue recibido y está pendiente de procesamiento.</li>{% endfor %}</ul></section>{% endif %}
 <section><h2>Historial de la operación</h2>
   <ol>{% for evento in operacion.eventos.all %}<li>{{ evento.fecha|date:'d/m/Y H:i:s' }} · {{ evento.evento }}{% if evento.detalle %}: {{ evento.detalle }}{% endif %}</li>{% endfor %}</ol>
 </section>

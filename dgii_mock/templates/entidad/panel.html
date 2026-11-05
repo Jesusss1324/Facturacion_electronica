@@ -1,0 +1,15 @@
+{% extends 'entidad/base.html' %}{% block content %}
+<h1>Control de la entidad</h1><p>Las decisiones se calculan sobre el documento recibido y el padrón de esta entidad, sin consultar la base de facturación.</p>
+<section class="controls"><div><h2>Procesamiento y escenarios</h2><p>Desactiva «Automático» para observar la recepción antes de procesarla manualmente. Los fallos de transporte no equivalen a rechazos del documento.</p></div>
+<form method="post">{% csrf_token %}{{ config_form.as_p }}<button type="submit">Aplicar configuración</button></form></section>
+<section id="recepciones"><h2>Recepciones</h2><div class="table-wrap"><table><thead><tr><th>e-NCF</th><th>Recibido</th><th>Estado</th><th>Seguimiento</th></tr></thead><tbody>
+{% for r in recepciones %}<tr><td><a href="{% url 'entidad:detalle' r.track_id %}">{{ r.encf }}</a></td><td>{{ r.recibida|date:'d/m/Y H:i:s' }}</td><td>{{ r.estado }}</td><td><code>{{ r.track_id }}</code></td></tr>
+{% empty %}<tr><td colspan="4">Todavía no se han recibido documentos. Emite un comprobante desde facturación para iniciar el circuito.</td></tr>{% endfor %}</tbody></table></div>
+<p>{% if recepciones.has_previous %}<a href="?page={{ recepciones.previous_page_number }}#recepciones">Anterior</a>{% endif %} Página {{ recepciones.number }} de {{ recepciones.paginator.num_pages }} {% if recepciones.has_next %}<a href="?page={{ recepciones.next_page_number }}#recepciones">Siguiente</a>{% endif %}</p></section>
+<section id="padron"><h2>Padrón independiente</h2><p><a class="button" href="{% url 'entidad:padron_nuevo' %}">Registrar contribuyente</a></p>
+<div class="table-wrap"><table><thead><tr><th>Identificación</th><th>Nombre</th><th>Activo</th><th>Emisor</th><th>Crédito fiscal local</th></tr></thead><tbody>
+{% for c in padron %}<tr><td><a href="{% url 'entidad:padron_editar' c.id %}">{{ c.identificacion }}</a></td><td>{{ c.nombre }}</td><td>{{ c.activo|yesno:'Sí,No' }}</td><td>{{ c.emisor|yesno:'Sí,No' }}</td><td>{{ c.receptor_credito|yesno:'Sí,No' }}</td></tr>{% endfor %}</tbody></table></div></section>
+<section id="rangos"><h2>Rangos locales asignados</h2><p>Estas asignaciones no son autorizaciones de la DGII. Cambiar el rango de la entidad no modifica el contador del programa emisor.</p><p><a class="button" href="{% url 'entidad:rango_nuevo' %}">Asignar rango</a></p>
+<div class="table-wrap"><table><thead><tr><th>Emisor</th><th>Tipo</th><th>Desde</th><th>Hasta</th><th>Vencimiento</th><th>Activo</th></tr></thead><tbody>{% for r in rangos %}<tr><td>{{ r.emisor.identificacion }}</td><td><a href="{% url 'entidad:rango_editar' r.id %}">E{{ r.tipo }}</a></td><td>{{ r.desde }}</td><td>{{ r.hasta }}</td><td>{{ r.vencimiento|date:'d/m/Y' }}</td><td>{{ r.activo|yesno:'Sí,No' }}</td></tr>{% endfor %}</tbody></table></div></section>
+<section><h2>Actividad reciente</h2><ol>{% for a in auditoria %}<li>{{ a.fecha|date:'d/m/Y H:i:s' }} · {{ a.actor }} · {{ a.accion }} {% if a.detalle %}— {{ a.detalle }}{% endif %}</li>{% empty %}<li>Las recepciones y cambios administrativos quedarán registrados aquí.</li>{% endfor %}</ol></section>
+{% endblock %}

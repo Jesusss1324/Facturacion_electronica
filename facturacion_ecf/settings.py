@@ -154,3 +154,22 @@ MAILERS = {
 
 # SQLite para la aplicación; memoria sólo para pruebas unitarias aisladas.
 FRONTEND_DATA_BACKEND = 'sqlite'
+
+
+# La entidad local tiene almacenamiento y servidor HTTP independientes.
+DATABASES['entidad'] = {
+    'ENGINE': 'django.db.backends.sqlite3', 'NAME': BASE_DIR / 'entidad.sqlite3',
+    'OPTIONS': {'timeout': 20, 'transaction_mode': 'IMMEDIATE'},
+}
+DATABASE_ROUTERS = ['dgii_mock.router.EntityRouter']
+ENTITY_MODE = False
+LOCAL_ENTITY_URL = 'http://127.0.0.1:8001'
+LOCAL_ENTITY_TOKEN_FILE = BASE_DIR / '.local' / 'entidad-api.key'
+LOCAL_ENTITY_ENABLED = True
+
+# Rutas opcionales para pruebas aisladas y el futuro empaquetado.
+import os
+DATABASES['default']['NAME'] = Path(os.environ.get('FACTURACION_DB', str(BASE_DIR / 'db.sqlite3')))
+DATABASES['entidad']['NAME'] = Path(os.environ.get('ENTIDAD_DB', str(BASE_DIR / 'entidad.sqlite3')))
+LOCAL_ENTITY_URL = os.environ.get('LOCAL_ENTITY_URL', LOCAL_ENTITY_URL)
+LOCAL_ENTITY_TOKEN_FILE = Path(os.environ.get('LOCAL_ENTITY_TOKEN_FILE', str(LOCAL_ENTITY_TOKEN_FILE)))

@@ -110,7 +110,7 @@ class RevisionFacturaTests(SimpleTestCase):
 
         # Cabecera de emisor y e-NCF
         self.assertContains(response, 'SOLUCIONES TECNOLÓGICAS DEL CARIBE, SRL')
-        self.assertContains(response, '1-30-98765-4')
+        self.assertContains(response, '1-30-98765-3')
         self.assertContains(response, 'FACTURA ELECTRÓNICA DGII')
         self.assertContains(response, 'FACTURA DE CRÉDITO FISCAL ELECTRÓNICA')
         self.assertContains(response, self.borrador.secuencia_encf_display)
@@ -182,7 +182,7 @@ class RevisionFacturaTests(SimpleTestCase):
         borrador = self.repo.get_borrador(self.borrador_id)
         xml = generar_xml_ecf(borrador, self.cliente, resumen, get_emisor_info())
         self.assertIn('<TipoeCF>31</TipoeCF>', xml)
-        self.assertIn('<RNCEmisor>130987654</RNCEmisor>', xml)
+        self.assertIn('<RNCEmisor>130987653</RNCEmisor>', xml)
         self.assertIn(f'<RNCComprador>{self.cliente.identificacion}</RNCComprador>', xml)
         self.assertIn('<MontoTotal>10620.00</MontoTotal>', xml)
         self.assertIn('<NombreItem>Consultoría Tecnológica Especializada</NombreItem>', xml)

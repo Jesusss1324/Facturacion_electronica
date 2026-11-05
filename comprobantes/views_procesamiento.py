@@ -119,8 +119,10 @@ class ReanudarOperacionView(LoginRequiredMixin, View):
             operacion = OperacionEmision.objects.filter(factura_id=pk).first()
             if operacion is None:
                 raise Http404('Operación no encontrada.')
-            if operacion.estado == 'pendiente' and not operacion.envio_iniciado:
+            if operacion.estado in ('pendiente', 'consultar'):
                 operacion.proximo_intento = timezone.now()
                 operacion.save(update_fields=['proximo_intento'])
         procesar_pendientes(operacion_id=operacion.id)
+        from frontend_data.entity_client import integrar_pendientes
+        integrar_pendientes(operacion_id=operacion.id)
         return HttpResponseRedirect(reverse('comprobantes:procesamiento', kwargs={'pk': pk}))

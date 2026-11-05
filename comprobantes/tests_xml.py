@@ -34,10 +34,10 @@ class DocumentoXmlTests(SimpleTestCase):
         for xml in (construir_xml_factura(factura, cliente),
                     generar_xml_ecf(borrador, cliente, resumen_lineas((linea,)))):
             root = fromstring(xml)
-            ns = {'e': 'http://dgii.gov.do/ecf/v1.0'}
-            self.assertEqual(root.find('.//e:RazonSocialComprador', ns).text, value)
-            self.assertEqual(root.find('.//e:NombreItem', ns).text, value)
-            self.assertEqual(root.find('.//e:DescripcionItem', ns).text, value)
+            ns = {}
+            self.assertEqual(root.find('.//RazonSocialComprador', ns).text, value)
+            self.assertEqual(root.find('.//NombreItem', ns).text, value)
+            self.assertEqual(root.find('.//DescripcionItem', ns).text, value)
             self.assertNotIn('<especial>', xml)
 
     def test_download_serves_the_same_parseable_xml_as_preview(self):
@@ -84,13 +84,13 @@ class DocumentoXmlTests(SimpleTestCase):
         # Metadatos del encabezado y cards
         self.assertContains(response, self.factura.e_ncf)
         self.assertContains(response, 'DGII e-CF v1.0')
-        self.assertContains(response, 'Sin validación XSD')
+        self.assertContains(response, 'Validación en entidad local')
         self.assertContains(response, 'Sin firma digital')
         self.assertContains(response, 'FIRMA DIGITAL')
 
         # Estructura del visor de código
         self.assertContains(response, f'e-CF_{self.factura.e_ncf}.xml')
-        self.assertContains(response, '&lt;eCF xmlns=&quot;http://dgii.gov.do/ecf/v1.0&quot;')
+        self.assertContains(response, '&lt;ECF&gt;')
         self.assertContains(response, '&lt;Encabezado&gt;')
         self.assertNotContains(response, '&lt;Signature')
 
@@ -105,14 +105,14 @@ class DocumentoXmlTests(SimpleTestCase):
         xml = construir_xml_factura(self.factura, cliente)
 
         self.assertTrue(xml.startswith('<?xml version="1.0" encoding="UTF-8"?>'))
-        self.assertIn('<eCF xmlns="http://dgii.gov.do/ecf/v1.0"', xml)
+        self.assertIn('<ECF>', xml)
         self.assertIn(f'<eNCF>{self.factura.e_ncf}</eNCF>', xml)
-        self.assertIn(f'<RNCEmisor>130987654</RNCEmisor>', xml)
+        self.assertIn(f'<RNCEmisor>130987653</RNCEmisor>', xml)
         self.assertIn(f'<RNCComprador>{cliente.identificacion}</RNCComprador>', xml)
         self.assertNotIn('<Signature', xml)
         self.assertIn('DEMOSTRACION LOCAL', xml)
         self.assertNotIn('<SignatureValue>', xml)
-        self.assertIn('</eCF>', xml)
+        self.assertIn('</ECF>', xml)
 
     def test_emitted_invoice_custom_items_rendered_in_xml(self):
         self.client.post('/acceso/iniciar-sesion/', {'username': 'user', 'password': '1234'})

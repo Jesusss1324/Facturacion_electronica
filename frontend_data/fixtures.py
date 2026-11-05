@@ -15,6 +15,11 @@ from .serialization import entidad
 
 def _rows(name, cls):
     data = json.loads((Path(__file__).parent / 'migrations' / 'demo_v1.json').read_text(encoding='utf-8'))
+    cambios = json.loads((Path(__file__).parent / 'migrations' / 'demo_v2_correcciones.json').read_text(encoding='utf-8'))
+    ids = {c['id']: c['nuevo'] for c in cambios['clientes']}
+    if name == 'ClienteRegistro':
+        for row in data[name]:
+            row['identificacion'] = ids[row['id']]
     rows = []
     for row in data[name]:
         for key in ('fecha_registro', 'fecha_modificacion', 'fecha_emision', 'timestamp'):

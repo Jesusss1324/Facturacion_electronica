@@ -109,6 +109,12 @@ class OperacionEmision(models.Model):
         PROCESANDO = 'procesando', 'Preparando documento'
         PREPARADA = 'preparada', 'Pendiente de integración'
         CONSULTAR = 'consultar', 'Resultado incierto: consultar recepción'
+        ENVIANDO = 'enviando', 'Enviando a la entidad local'
+        CONSULTANDO = 'consultando', 'Consultando recepción'
+        RECIBIDO = 'recibido', 'Recibido; pendiente de validación'
+        VALIDADO = 'validado_sin_firma', 'Validado localmente; firma pendiente'
+        RECHAZADO = 'rechazado', 'Rechazado por la entidad local'
+        CONFLICTO = 'conflicto', 'Conflicto de documento; revisión requerida'
 
     id = models.UUIDField(primary_key=True, default=uuid4, editable=False)
     borrador = models.OneToOneField(BorradorRegistro, on_delete=models.PROTECT)
@@ -128,6 +134,7 @@ class OperacionEmision(models.Model):
     bloqueo_hasta = models.DateTimeField(null=True, blank=True)
     envio_iniciado = models.DateTimeField(null=True, blank=True)
     ultimo_error = models.TextField(blank=True)
+    resultado_entidad = models.JSONField(default=dict)
 
     class Meta:
         constraints = [models.UniqueConstraint(fields=['secuencia', 'numero'], name='reserva_unica_por_tipo')]

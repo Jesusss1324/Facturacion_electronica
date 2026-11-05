@@ -27,7 +27,7 @@ class DirectorioClientesTests(SimpleTestCase):
         self.assertContains(response, 'Comercial Nova Caribe, SRL')
 
     def test_search_ignores_accents_and_identification_punctuation(self):
-        for query, expected in [('Juan Perez', 2), ('1-01-00000-1', 1), ('00123450022', 2)]:
+        for query, expected in [('Juan Perez', 2), (self.repository.get_cliente(1).identificacion_display, 1), (self.repository.get_cliente(2).identificacion, 2)]:
             with self.subTest(query=query):
                 response = self.client.get('/clientes/', {'q': query})
                 self.assertEqual([cliente.id for cliente in response.context['page_obj']], [expected])

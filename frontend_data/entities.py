@@ -70,13 +70,13 @@ class Factura:
 
     @property
     def estado_display(self):
-        return {'aprobado': 'Aprobado', 'rechazado': 'Rechazado', 'anulado': 'Anulado', 'generado': 'Pendiente de integración'}.get(self.estado, 'En proceso')
+        return {'aprobado': 'Aprobado', 'rechazado': 'Rechazado', 'anulado': 'Anulado', 'generado': 'Preparando recepción local', 'enviado': 'Recibido; pendiente de validación', 'validado': 'Validado localmente; firma pendiente'}.get(self.estado, 'En proceso')
 
     @property
     def track_id_display(self):
         if self.track_id:
             return self.track_id
-        if self.estado == 'generado':
+        if self.estado in ('generado', 'enviado', 'validado'):
             return 'Pendiente de recepción'
         return f'DGII-REC-{89240000 + self.id}'
 

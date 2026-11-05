@@ -19,7 +19,7 @@ from .seed import cargar_demo
 from .sqlite_repository import SQLiteRepository
 
 
-@override_settings(FRONTEND_DATA_BACKEND='sqlite', DEBUG=True, FRONTEND_AUTH_ENABLED=True,
+@override_settings(LOCAL_ENTITY_ENABLED=False, FRONTEND_DATA_BACKEND='sqlite', DEBUG=True, FRONTEND_AUTH_ENABLED=True,
                    SESSION_ENGINE='django.contrib.sessions.backends.signed_cookies')
 class SQLiteRepositoryTests(TestCase):
     def test_runtime_reads_only_sqlite_and_emitter_changes_reach_views_and_xml(self):

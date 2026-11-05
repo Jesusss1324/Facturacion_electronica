@@ -1,0 +1,14 @@
+[
+  {
+    "archivo": "ecf31.xsd",
+    "sha256": "6f2909a93d84919518d2ae3c77fead4b35c3e8c95996b8af67b0040c2e2be298",
+    "url": "https://dgii.gov.do/cicloContribuyente/facturacion/comprobantesFiscalesElectronicosE-CF/Documentacin%20sobre%20eCF/Documentaci%C3%B3n%20T%C3%A9cnica%20%28XSD%29/e-CF%2031%20v.1.0.xsd",
+    "descargado": "2026-11-05"
+  },
+  {
+    "archivo": "ecf32.xsd",
+    "sha256": "151676df03c61335b4ac1eca97f99395488d57ea92793b49353602871e651f3c",
+    "url": "https://dgii.gov.do/cicloContribuyente/facturacion/comprobantesFiscalesElectronicosE-CF/Documentacin%20sobre%20eCF/Documentaci%C3%B3n%20T%C3%A9cnica%20%28XSD%29/e-CF%2032%20v.1.0.xsd",
+    "descargado": "2026-11-05"
+  }
+]

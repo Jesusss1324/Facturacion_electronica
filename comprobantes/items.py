@@ -8,7 +8,7 @@ from frontend_data.entities import importe
 
 class LineaFacturaForm(forms.Form):
     tipo = forms.ChoiceField(label='Tipo de concepto', choices=[('servicio', 'Servicio'), ('bien', 'Bien')], initial='servicio', widget=forms.RadioSelect)
-    concepto = forms.CharField(label='Nombre del bien o servicio', max_length=160)
+    concepto = forms.CharField(label='Nombre del bien o servicio', max_length=80)
     descripcion = forms.CharField(label='Descripción', max_length=500, required=False, widget=forms.Textarea(attrs={'rows': 2}))
     cantidad = forms.DecimalField(label='Cantidad', min_value=Decimal('0.01'), max_value=Decimal('999999.99'), max_digits=8, decimal_places=2, initial=1)
     unidad = forms.ChoiceField(label='Unidad', choices=[('Unidad', 'Unidad'), ('Servicio', 'Servicio'), ('Hora', 'Hora'), ('Licencia', 'Licencia')])

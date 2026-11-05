@@ -1,0 +1,9 @@
+{% load static %}<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{% block title %}Entidad local · E31/E32{% endblock %}</title>
+<link rel="stylesheet" href="{% static 'css/pages/entidad.css' %}"></head><body>
+<a class="skip" href="#contenido">Ir al contenido</a>
+<header><a href="{% url 'entidad:panel' %}">Entidad local <span>E31 / E32</span></a>
+<nav aria-label="Entidad"><a href="{% url 'entidad:panel' %}#recepciones">Recepciones</a><a href="{% url 'entidad:panel' %}#padron">Padrón</a><a href="{% url 'entidad:panel' %}#rangos">Rangos</a>
+{% if request.session.administrador_entidad %}<form method="post" action="{% url 'entidad:logout' %}">{% csrf_token %}<button type="submit">Cerrar sesión</button></form>{% endif %}</nav></header>
+<main id="contenido"><p class="notice">Recreación local independiente de la DGII. Sin validez fiscal. Firma criptográfica pendiente.</p>
+{% block content %}{% endblock %}</main></body></html>

@@ -116,3 +116,20 @@ El mismo procesamiento está disponible con `manage.py procesar_emisiones` (una 
 La pantalla `/facturas/<pk>/procesamiento/` muestra el estado real de la operación y consulta su estado sin modificar registros. El reintento local requiere POST y CSRF. Los parámetros de simulación no fuerzan una aceptación para las operaciones nuevas. La pantalla de resultado redirige al seguimiento mientras no existe una respuesta externa.
 
 La recuperación de un trabajo local interrumpido lo devuelve a la cola. Si hay una marca persistente de envío, lo mueve a `consultar`: la próxima integración deberá consultar a la entidad antes de decidir un reenvío del mismo documento. En este paso no hay llamadas de red, certificado, firma, validación XSD ni aceptación/rechazo externos. El historial de demostración anterior permanece intacto.
+
+
+## Paso 3: entidad local E31/E32
+
+El arranque de facturación inicia una entidad HTTP independiente en `http://127.0.0.1:8001/entidad/`, con base `entidad.sqlite3` y credenciales administrativas propias. La primera visita permite crear ese administrador, sin contraseña predeterminada. El menú de facturación incluye el enlace al panel. No requiere hosting, DNS ni conexión a DGII. Los esquemas se conservan localmente para funcionamiento sin internet.
+
+La entidad incluye padrón independiente, asignación de rangos, recepción con TrackId, procesamiento automático o manual, auditoría, escenarios de indisponibilidad/demora/respuesta perdida y detalle de cada comprobación. Se validan contenido XML contra XSD E31/E32, identificaciones, padrón, rangos, importes y duplicados. Un duplicado idéntico recupera su recepción; un documento diferente con el mismo e-NCF genera conflicto.
+
+Se corrigieron las identificaciones conocidas del conjunto de demostración y el RNC del emisor para las comprobaciones locales, preservando vínculos y registros modificados por el usuario. Los números estructuralmente válidos no acreditan registro real.
+
+La entrega local confirma su intención antes de hacer HTTP y consulta la recepción después de un timeout o reinicio. Sólo una confirmación de «No recibido» habilita reenviar los mismos bytes y secuencia. Los datos de facturación y los de la entidad no se sincronizan automáticamente.
+
+La firma sigue siendo la siguiente etapa: un documento sin errores se marca `validado_sin_firma`, nunca `aprobado`. Se distingue la validación de contenido previo a firma de la validación completa del XSD; el esquema exige la sección de firma. El circuito RFCE de E32 de bajo monto también queda documentado como extensión pendiente. Las políticas locales se distinguen expresamente de las reglas oficiales.
+
+Fuentes, versiones, normalización del esquema publicado, catálogo de reglas, contrato HTTP, perfil soportado y limitaciones: [docs/entidad-local.md](docs/entidad-local.md).
+
+Las rutas opcionales `FACTURACION_DB`, `ENTIDAD_DB`, `LOCAL_ENTITY_URL` y `LOCAL_ENTITY_TOKEN_FILE` permiten pruebas aisladas y el futuro empaquetado. No hace falta configurarlas para el arranque local normal. La credencial de integración y los registros operativos de la entidad se guardan bajo `.local/`, excluido de Git. No publiques esa carpeta ni las bases.

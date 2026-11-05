@@ -41,7 +41,7 @@ class EditarClienteTests(SimpleTestCase):
     def test_successful_update_redirects_to_detail_with_message(self):
         payload = {
             'tipo_identificacion': 'RNC',
-            'identificacion': '1-01-00000-1',
+            'identificacion': self.repository.get_cliente(1).identificacion_display,
             'nombre': 'Comercial Nova Caribe Actualizada, SRL',
             'email': 'nuevo_contacto@novacaribe.com.do',
             'telefono': '809-555-9988',
@@ -96,7 +96,7 @@ class EditarClienteTests(SimpleTestCase):
     def test_status_change_to_inactive_updates_repository(self):
         payload = {
             'tipo_identificacion': 'RNC',
-            'identificacion': '1-01-00000-1',
+            'identificacion': self.repository.get_cliente(1).identificacion_display,
             'nombre': 'Comercial Nova Caribe, SRL',
             'email': 'contacto@test.com',
             'telefono': '809-555-1001',

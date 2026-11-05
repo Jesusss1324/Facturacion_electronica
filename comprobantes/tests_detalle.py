@@ -52,7 +52,7 @@ class DetalleFacturaTests(SimpleTestCase):
         # Emisor y Encabezado
         self.assertContains(response, 'SOLUCIONES TECNOLÓGICAS DEL CARIBE, SRL')
         self.assertContains(response, 'EMISOR AUTORIZADO E-CF')
-        self.assertContains(response, '1-30-98765-4')
+        self.assertContains(response, '1-30-98765-3')
         self.assertContains(response, 'DGII · FACTURA ELECTRÓNICA')
         self.assertContains(response, '● APROBADO DGII')
         self.assertContains(response, self.factura.e_ncf)

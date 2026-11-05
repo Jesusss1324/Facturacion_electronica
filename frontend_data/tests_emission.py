@@ -14,9 +14,10 @@ from .models import ConfiguracionEmisor, FacturaRegistro, OperacionEmision, Secu
 from .sqlite_repository import SQLiteRepository
 
 
-@override_settings(FRONTEND_DATA_BACKEND='sqlite', DEBUG=True, FRONTEND_AUTH_ENABLED=True,
+@override_settings(LOCAL_ENTITY_ENABLED=False, FRONTEND_DATA_BACKEND='sqlite', DEBUG=True, FRONTEND_AUTH_ENABLED=True,
                    SESSION_ENGINE='django.contrib.sessions.backends.signed_cookies')
 class OperacionesTests(TestCase):
+    @override_settings(LOCAL_ENTITY_ENABLED=False)
     def test_server_startup_uses_recovery_command_and_starts_worker(self):
         from django.core.management import get_commands
         from django.contrib.staticfiles.management.commands.runserver import Command as BaseCommand

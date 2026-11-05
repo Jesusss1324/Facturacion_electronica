@@ -12,11 +12,11 @@ document.addEventListener('DOMContentLoaded', () => {
           }
         }
       } catch { /* Se conserva el estado mostrado hasta recuperar conexión. */ }
-      if (['pendiente', 'procesando'].includes(operacion.dataset.operacionEstado)) {
+      if (['pendiente', 'procesando', 'preparada', 'consultar', 'consultando', 'enviando', 'recibido'].includes(operacion.dataset.operacionEstado)) {
         setTimeout(poll, 3000);
       }
     };
-    if (['pendiente', 'procesando'].includes(operacion.dataset.operacionEstado)) setTimeout(poll, 3000);
+    if (['pendiente', 'procesando', 'preparada', 'consultar', 'consultando', 'enviando', 'recibido'].includes(operacion.dataset.operacionEstado)) setTimeout(poll, 3000);
     return;
   }
   const container = document.querySelector('.processing-page-container');
